@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
+    "start": "npm run build && vite preview",
     "prepare": "husky",
     "commit": "cz",
     "release": "semantic-release"
