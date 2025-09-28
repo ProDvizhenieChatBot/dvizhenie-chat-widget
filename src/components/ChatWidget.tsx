@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-
-import clsx from 'clsx'
 import { MessageCircle, X, Send, Paperclip, ArrowLeft } from 'lucide-react'
+import clsx from 'clsx'
 
 import { useChatFlow } from '../hooks/useChatFlow'
 
@@ -46,6 +45,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [validationError, setValidationError] = useState<string>('')
+  const [isProcessingButton, setIsProcessingButton] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,95 +56,164 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     handleInputSubmit,
     handleFileUpload: handleChatFileUpload,
     goToPreviousStep,
+    restartAfterDecline,
     saveProgress,
-    loadProgress,
   } = useChatFlow()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const showCurrentStep = useCallback(() => {
-    const currentStep = getCurrentStep()
-    if (!currentStep) return
+  // Добавляем сообщение от бота
+  const addBotMessage = useCallback(
+    (
+      text: string,
+      buttons?: Array<{ id: string; text: string; action: string; value: string | boolean }>,
+      inputType?: string,
+      placeholder?: string,
+      validation?: (value: string) => boolean | string,
+    ) => {
+      setIsTyping(true)
+      setTimeout(() => {
+        const newMessage: Message = {
+          id: `bot-${Date.now()}`,
+          text,
+          isBot: true,
+          timestamp: new Date(),
+          buttons,
+          inputType: inputType as
+            | 'text'
+            | 'email'
+            | 'phone'
+            | 'date'
+            | 'textarea'
+            | 'file-upload'
+            | undefined,
+          placeholder,
+          validation,
+        }
+        setMessages((prev) => [...prev, newMessage])
+        setIsTyping(false)
+      }, 800)
+    },
+    [],
+  )
 
-    setIsTyping(true)
-    setTimeout(() => {
+  // Добавляем сообщение от пользователя
+  const addUserMessage = useCallback(
+    (text: string) => {
       const newMessage: Message = {
-        id: `step-${currentStep.id}-${Date.now()}`,
-        text: currentStep.text,
-        isBot: true,
+        id: `user-${Date.now()}`,
+        text,
+        isBot: false,
         timestamp: new Date(),
-        buttons: currentStep.buttons,
-        inputType: currentStep.inputType,
-        placeholder: currentStep.placeholder,
-        validation: currentStep.validation,
       }
       setMessages((prev) => [...prev, newMessage])
-      setIsTyping(false)
-    }, 800)
-  }, [getCurrentStep])
+      onMessageSend?.(text)
+    },
+    [onMessageSend],
+  )
+
+  // Показываем текущий шаг
+  const showCurrentStep = useCallback(() => {
+    const currentStep = getCurrentStep()
+    if (!currentStep) {
+      console.log('❌ NO CURRENT STEP TO SHOW')
+      return
+    }
+
+    console.log('📺 SHOWING STEP:', currentStep.id, currentStep.text.substring(0, 50) + '...')
+    console.log(
+      '🔘 STEP TYPE:',
+      currentStep.type,
+      'BUTTONS:',
+      currentStep.type === 'buttons' ? currentStep.buttons : 'NONE',
+    )
+    addBotMessage(
+      currentStep.text,
+      currentStep.type === 'buttons'
+        ? (currentStep.buttons as Array<{
+            id: string
+            text: string
+            action: string
+            value: string | boolean
+          }>)
+        : undefined,
+      currentStep.inputType,
+      currentStep.placeholder,
+      currentStep.validation,
+    )
+  }, [getCurrentStep, addBotMessage])
+
+  // Инициализация чата при открытии
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      console.log('🎬 INITIALIZING CHAT')
+      showCurrentStep()
+    }
+  }, [isOpen, messages.length, showCurrentStep])
+
+  // Показываем новый шаг при изменении currentStepId
+  useEffect(() => {
+    if (isOpen && chatState.completedSteps.length > 0) {
+      console.log(
+        '🔄 STEP CHANGED:',
+        chatState.currentStepId,
+        'completed:',
+        chatState.completedSteps.length,
+      )
+      // Очищаем состояние кнопок при переходе к новому шагу
+      setIsProcessingButton(false)
+      showCurrentStep()
+    }
+  }, [chatState.currentStepId, isOpen, showCurrentStep])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      // Проверяем, есть ли сохраненный прогресс
-      const urlParams = new URLSearchParams(window.location.search)
-      const resumeToken = urlParams.get('resume')
-
-      if (resumeToken && loadProgress(resumeToken)) {
-        // Прогресс загружен, показываем текущий шаг
-        showCurrentStep()
-      } else if (loadProgress()) {
-        // Есть сохраненный прогресс без токена
-        showCurrentStep()
-      } else {
-        // Начинаем с первого шага
-        showCurrentStep()
+  // Обработка нажатия кнопки
+  const handleButtonClickLocal = useCallback(
+    (button: { id: string; action: string; text: string; value?: string | boolean }) => {
+      // Предотвращаем повторные нажатия
+      if (isProcessingButton) {
+        return
       }
-    }
-  }, [isOpen, messages.length, loadProgress, showCurrentStep])
 
-  // Отслеживаем изменения текущего шага
-  useEffect(() => {
-    if (isOpen && messages.length > 0) {
-      showCurrentStep()
-    }
-  }, [chatState.currentStepId, isOpen, messages.length, showCurrentStep])
+      // Специальная обработка для перезапуска
+      if (button.action === 'restart') {
+        addUserMessage(button.text)
+        setMessages([]) // Очищаем все сообщения
+        setIsProcessingButton(false)
+        setValidationError('')
 
-  const addUserMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      isBot: false,
-      timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, newMessage])
-    onMessageSend?.(text)
-  }
+        setTimeout(() => {
+          restartAfterDecline()
+        }, 500)
+        return
+      }
 
-  const handleButtonClickLocal = (button: {
-    action: string
-    text: string
-    value?: string | boolean
-  }) => {
-    addUserMessage(button.text)
-    setValidationError('')
+      // Блокируем кнопки на время обработки
+      setIsProcessingButton(true)
+      addUserMessage(button.text)
+      setValidationError('')
 
-    setTimeout(() => {
-      handleButtonClick(button.action, button.value)
-    }, 300)
-  }
+      // Обрабатываем нажатие кнопки
+      setTimeout(() => {
+        handleButtonClick(button.action, button.value || false)
+        setIsProcessingButton(false)
+      }, 300)
+    },
+    [isProcessingButton, addUserMessage, handleButtonClick, restartAfterDecline],
+  )
 
-  const handleSendMessage = () => {
+  // Обработка отправки сообщения
+  const handleSendMessage = useCallback(() => {
     if (!inputValue.trim()) return
 
     const currentStep = getCurrentStep()
 
-    // Валидация, если есть
+    // Валидация
     if (currentStep.validation) {
       const validationResult = currentStep.validation(inputValue)
       if (validationResult !== true) {
@@ -156,36 +225,38 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     addUserMessage(inputValue)
     setValidationError('')
 
-    setTimeout(() => {
-      const result = handleInputSubmit(inputValue)
-      if (result !== true && typeof result === 'string') {
-        setValidationError(result)
-      }
-    }, 300)
+    const result = handleInputSubmit(inputValue)
+    if (result !== true && typeof result === 'string') {
+      setValidationError(result)
+    }
 
     setInputValue('')
-  }
+  }, [inputValue, getCurrentStep, addUserMessage, handleInputSubmit])
 
-  const handleFileUploadLocal = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
-    if (files.length > 0) {
-      files.forEach((file) => {
-        addUserMessage(`📎 Файл загружен: ${file.name}`)
-        onFileUpload?.(file)
-      })
-
-      setTimeout(() => {
+  // Обработка загрузки файлов
+  const handleFileUploadLocal = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || [])
+      if (files.length > 0) {
+        files.forEach((file) => {
+          addUserMessage(`📎 Файл загружен: ${file.name}`)
+          onFileUpload?.(file)
+        })
         handleChatFileUpload(files)
-      }, 300)
-    }
-  }
+      }
+    },
+    [addUserMessage, onFileUpload, handleChatFileUpload],
+  )
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
-  }
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        handleSendMessage()
+      }
+    },
+    [handleSendMessage],
+  )
 
   return (
     <>
@@ -235,41 +306,102 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
           {/* Область сообщений */}
           <div className="chat-widget-messages">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={clsx('chat-message', message.isBot ? 'bot-message' : 'user-message')}
-              >
-                {message.isBot && (
-                  <div className="chat-message-avatar">
-                    <MessageCircle size={16} />
-                  </div>
-                )}
-                <div className="chat-message-content">
-                  <div className="chat-message-text">{message.text}</div>
-                  {message.buttons && (
-                    <div className="chat-message-buttons">
-                      {message.buttons.map((button) => (
-                        <button
-                          key={button.id}
-                          onClick={() => handleButtonClickLocal(button)}
-                          className="chat-message-button"
-                          style={{ borderColor: primaryColor, color: primaryColor }}
-                        >
-                          {button.text}
-                        </button>
-                      ))}
+            {(() => {
+              // Находим индекс последнего сообщения бота ОДИН РАЗ
+              const lastBotMessageIndex =
+                messages
+                  .map((msg, idx) => (msg.isBot ? idx : -1))
+                  .filter((idx) => idx !== -1)
+                  .pop() ?? -1
+
+              console.log(
+                '🔍 LAST BOT MESSAGE INDEX:',
+                lastBotMessageIndex,
+                'TOTAL MESSAGES:',
+                messages.length,
+              )
+
+              return messages.map((message, index) => {
+                // Кнопки активны только если это последнее сообщение бота И у него есть кнопки
+                const areButtonsActive =
+                  message.isBot &&
+                  message.buttons &&
+                  message.buttons.length > 0 &&
+                  index === lastBotMessageIndex
+
+                console.log(`💬 MESSAGE ${index}:`, {
+                  isBot: message.isBot,
+                  hasButtons: !!message.buttons,
+                  buttonsCount: message.buttons?.length || 0,
+                  isLastBot: index === lastBotMessageIndex,
+                  areButtonsActive,
+                })
+
+                return (
+                  <div
+                    key={message.id}
+                    className={clsx('chat-message', message.isBot ? 'bot-message' : 'user-message')}
+                  >
+                    {message.isBot && (
+                      <div className="chat-message-avatar">
+                        <MessageCircle size={16} />
+                      </div>
+                    )}
+                    <div className="chat-message-content">
+                      <div className="chat-message-text">{message.text}</div>
+                      {message.buttons && (
+                        <div className="chat-message-buttons">
+                          {message.buttons.map((button) => {
+                            const isDisabled = !areButtonsActive || isProcessingButton
+
+                            return (
+                              <button
+                                key={button.id}
+                                onClick={() =>
+                                  areButtonsActive &&
+                                  !isProcessingButton &&
+                                  handleButtonClickLocal(button)
+                                }
+                                disabled={isDisabled}
+                                className={clsx(
+                                  'chat-message-button',
+                                  isProcessingButton &&
+                                    areButtonsActive &&
+                                    'chat-message-button-loading',
+                                  !areButtonsActive && 'chat-message-button-disabled',
+                                )}
+                                style={
+                                  !areButtonsActive
+                                    ? {
+                                        borderColor: '#d1d5db',
+                                        color: '#9ca3af',
+                                        backgroundColor: '#f9fafb',
+                                      }
+                                    : {
+                                        borderColor: primaryColor,
+                                        color: primaryColor,
+                                      }
+                                }
+                              >
+                                {isProcessingButton && areButtonsActive
+                                  ? '⏳ Обрабатываем...'
+                                  : button.text}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="chat-message-time">
-                  {message.timestamp.toLocaleTimeString('ru-RU', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </div>
-              </div>
-            ))}
+                    <div className="chat-message-time">
+                      {message.timestamp.toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </div>
+                )
+              })
+            })()}
 
             {/* Индикатор печати */}
             {isTyping && (

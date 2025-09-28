@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 
-import type { ChatState, FormData } from '../types/chat'
 import { chatSteps } from '../config/chatSteps'
+import type { ChatState, FormData } from '../types/chat'
 
 export const useChatFlow = () => {
   const [chatState, setChatState] = useState<ChatState>({
@@ -11,7 +11,7 @@ export const useChatFlow = () => {
     canGoBack: false,
   })
 
-  const updateFormData = useCallback((field: keyof FormData, value: any) => {
+  const updateFormData = useCallback((field: keyof FormData, value: string | boolean) => {
     setChatState((prev) => ({
       ...prev,
       formData: {
@@ -26,17 +26,29 @@ export const useChatFlow = () => {
       const currentStep = chatSteps[chatState.currentStepId]
       let nextStepId: string
 
+      console.log('🚀 GO TO NEXT STEP:', {
+        currentStepId: chatState.currentStepId,
+        formData: chatState.formData,
+        currentStep: currentStep?.id,
+      })
+
       if (stepId) {
         nextStepId = stepId
       } else if (typeof currentStep.nextStep === 'function') {
         nextStepId = currentStep.nextStep(chatState.formData)
+        console.log('📋 NEXT STEP CALCULATED:', {
+          nextStepId,
+          hasConsent: chatState.formData.hasConsent,
+        })
       } else if (typeof currentStep.nextStep === 'string') {
         nextStepId = currentStep.nextStep
       } else {
         // Если нет следующего шага, остаемся на текущем
+        console.log('❌ NO NEXT STEP FOUND')
         return
       }
 
+      console.log('✅ MOVING TO STEP:', nextStepId)
       setChatState((prev) => ({
         ...prev,
         currentStepId: nextStepId,
@@ -60,53 +72,130 @@ export const useChatFlow = () => {
   }, [chatState.completedSteps])
 
   const handleButtonClick = useCallback(
-    (action: string, value: any) => {
-      // Обновляем данные формы на основе действия
+    (action: string, value: string | boolean) => {
+      console.log('🔥🔥🔥 NEW VERSION BUTTON CLICK:', {
+        action,
+        value,
+        currentStep: chatState.currentStepId,
+      })
+
+      // Специальная обработка для перезапуска
+      if (action === 'restart') {
+        restartAfterDecline()
+        return
+      }
+
+      // Специальная обработка для продолжения (не обновляет formData)
+      if (action === 'continue') {
+        // Сразу переходим к следующему шагу без обновления formData
+        setChatState((prev) => {
+          const currentStep = chatSteps[prev.currentStepId]
+          const nextStepId =
+            typeof currentStep?.nextStep === 'function'
+              ? currentStep.nextStep(prev.formData)
+              : currentStep?.nextStep
+
+          if (nextStepId && chatSteps[nextStepId]) {
+            console.log('✅ CONTINUE TO STEP:', nextStepId)
+            return {
+              ...prev,
+              currentStepId: nextStepId,
+              completedSteps: [...prev.completedSteps, prev.currentStepId],
+              canGoBack: true,
+            }
+          } else {
+            console.log('❌ NO NEXT STEP FOUND FOR CONTINUE')
+            return prev
+          }
+        })
+        return
+      }
+
+      // Определяем какое поле обновить
+      let fieldToUpdate: keyof FormData | null = null
       switch (action) {
         case 'consent':
-          updateFormData('hasConsent', value)
+          fieldToUpdate = 'hasConsent'
           break
         case 'applicant-type':
-          updateFormData('applicantType', value)
+          fieldToUpdate = 'applicantType'
           break
         case 'need-type':
-          updateFormData('needType', value)
+          fieldToUpdate = 'needType'
           break
         case 'has-certificate':
-          updateFormData('hasCertificate', value)
+          fieldToUpdate = 'hasCertificate'
           break
         case 'has-other-fundraisers':
-          updateFormData('hasOtherFundraisers', value)
+          fieldToUpdate = 'hasOtherFundraisers'
           break
         case 'need-consultation':
-          updateFormData('needConsultation', value)
+          fieldToUpdate = 'needConsultation'
           break
         case 'can-promote':
-          updateFormData('canPromote', value)
+          fieldToUpdate = 'canPromote'
           break
         case 'want-positioning-info':
-          updateFormData('wantPositioningInfo', value)
+          fieldToUpdate = 'wantPositioningInfo'
           break
         case 'is-in-medical-document':
-          updateFormData('isInMedicalDocument', value)
+          fieldToUpdate = 'isInMedicalDocument'
           break
         case 'has-deadlines':
-          updateFormData('hasDeadlines', value)
+          fieldToUpdate = 'hasDeadlines'
           break
         case 'ready-for-video':
-          updateFormData('readyForVideo', value)
+          fieldToUpdate = 'readyForVideo'
           break
         case 'has-gosuslugi-record':
-          updateFormData('hasGosuslugiRecord', value)
+          fieldToUpdate = 'hasGosuslugiRecord'
+          break
+        case 'submit':
+          fieldToUpdate = 'submitForm'
+          break
+        case 'edit':
+          // Для редактирования не обновляем formData, просто переходим
           break
         default:
           break
       }
 
-      // Переходим к следующему шагу
-      goToNextStep()
+      // Обновляем состояние синхронно и сразу переходим к следующему шагу
+      setChatState((prev) => {
+        const newFormData = fieldToUpdate
+          ? { ...prev.formData, [fieldToUpdate]: value }
+          : prev.formData
+
+        console.log('🎯 FORM DATA UPDATED SYNC:', newFormData)
+
+        // Вычисляем следующий шаг с обновленными данными
+        const currentStep = chatSteps[prev.currentStepId]
+        const nextStepId =
+          typeof currentStep?.nextStep === 'function'
+            ? currentStep.nextStep(newFormData)
+            : currentStep?.nextStep
+
+        console.log('📋 NEXT STEP CALCULATED SYNC:', { nextStepId, formData: newFormData })
+
+        if (nextStepId && chatSteps[nextStepId]) {
+          console.log('✅ MOVING TO STEP SYNC:', nextStepId)
+          return {
+            ...prev,
+            formData: newFormData,
+            currentStepId: nextStepId,
+            completedSteps: [...prev.completedSteps, prev.currentStepId],
+            canGoBack: true,
+          }
+        } else {
+          console.log('❌ NO NEXT STEP FOUND SYNC')
+          return {
+            ...prev,
+            formData: newFormData,
+          }
+        }
+      })
     },
-    [updateFormData, goToNextStep],
+    [chatState.currentStepId],
   )
 
   const handleInputSubmit = useCallback(
@@ -152,7 +241,11 @@ export const useChatFlow = () => {
         updateFormData(field, value)
       }
 
-      goToNextStep()
+      // Переходим к следующему шагу после обновления данных
+      setTimeout(() => {
+        goToNextStep()
+      }, 100)
+
       return true // Успешная валидация
     },
     [chatState.currentStepId, updateFormData, goToNextStep],
@@ -168,7 +261,9 @@ export const useChatFlow = () => {
         },
       }))
 
-      goToNextStep()
+      setTimeout(() => {
+        goToNextStep()
+      }, 100)
     },
     [goToNextStep],
   )
@@ -178,6 +273,16 @@ export const useChatFlow = () => {
   }, [chatState.currentStepId])
 
   const resetChat = useCallback(() => {
+    setChatState({
+      currentStepId: 'welcome',
+      formData: {},
+      completedSteps: [],
+      canGoBack: false,
+    })
+  }, [])
+
+  const restartAfterDecline = useCallback(() => {
+    // Сбрасываем состояние чата
     setChatState({
       currentStepId: 'welcome',
       formData: {},
@@ -232,6 +337,7 @@ export const useChatFlow = () => {
     goToPreviousStep,
     updateFormData,
     resetChat,
+    restartAfterDecline,
     saveProgress,
     loadProgress,
   }

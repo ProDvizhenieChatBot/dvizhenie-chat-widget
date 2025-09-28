@@ -55,6 +55,9 @@ export interface FormData {
   // Документы
   hasGosuslugiRecord: boolean
   uploadedFiles: File[]
+
+  // Финальное подтверждение
+  submitForm?: boolean
 }
 
 export interface ChatStep {
