@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageCircle, X, Send, Paperclip, ArrowLeft } from 'lucide-react'
 import clsx from 'clsx'
+import { MessageCircle, X, Send, Paperclip, ArrowLeft } from 'lucide-react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 import { useChatFlow } from '../hooks/useChatFlow'
 

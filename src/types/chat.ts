@@ -68,7 +68,7 @@ export interface ChatStep {
     id: string
     text: string
     action: string
-    value?: any
+    value?: string | boolean
   }>
   inputType?: 'text' | 'email' | 'phone' | 'date' | 'textarea'
   placeholder?: string
