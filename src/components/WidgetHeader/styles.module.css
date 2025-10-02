@@ -1,0 +1,36 @@
+.widgetHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+  padding: 0 18px;
+  background: var(--color-primary);
+}
+
+.widgetHeaderIcon {
+  width: 50px;
+  height: 14px;
+}
+
+.widgetHeaderTitle {
+  color: var(--color-white);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.widgetHeaderButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  cursor: pointer;
+  margin-left: 12px;
+}

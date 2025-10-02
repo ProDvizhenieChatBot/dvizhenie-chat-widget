@@ -1,1 +1,25 @@
-/* intentionally empty */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI',
+    'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.telegram-fullscreen {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.telegram-fullscreen #root {
+  height: 100vh;
+  overflow: hidden;
+}

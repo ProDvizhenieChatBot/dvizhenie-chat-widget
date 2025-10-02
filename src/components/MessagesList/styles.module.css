@@ -1,0 +1,30 @@
+.messagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  margin: 0;
+  padding: 0 10px 20px;
+  list-style: none;
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+  scrollbar-color: #bbb transparent;
+}
+
+.messagesList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messagesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messagesList::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 3px;
+}
+
+.messagesList::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}

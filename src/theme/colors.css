@@ -1,0 +1,52 @@
+:root {
+  /* Цвета */
+  --color-accent: #333faf;
+  --color-primary: #404fdb;
+  --color-secondary: #c7d2e9;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-gray: #4e4e4e;
+  --color-error: #c33;
+  --color-error-bg: #fee;
+  --color-error-light: #fef5f5;
+
+  /* Размеры */
+  --widget-padding: 8px;
+  --widget-border-radius: 16px;
+  --widget-border-radius-small: 8px;
+  --widget-max-width: 400px;
+  --widget-max-height: 600px;
+  --widget-button-size: 32px;
+
+  /* Позиционирование */
+  --widget-bottom-offset: 80px;
+  --widget-right-offset: 15%;
+  --widget-mobile-offset: 20px;
+  --widget-mobile-small-offset: 10px;
+
+  /* Отступы */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+
+  /* Шрифты */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+
+  /* Высота строки */
+  --line-height-sm: 16px;
+  --line-height-md: 20px;
+  --line-height-lg: 24px;
+
+  /* Переходы */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+
+  /* Тени */
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
