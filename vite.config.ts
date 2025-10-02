@@ -1,9 +1,25 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
   const isInitBuild = process.env.BUILD_INIT === 'true'
+  const isDemoBuild = process.env.BUILD_DEMO === 'true'
 
+  // Для демо-сборки используем обычную конфигурацию приложения
+  if (isDemoBuild) {
+    return {
+      plugins: [react()],
+      base: './',
+      build: {
+        outDir: 'dist',
+        sourcemap: true,
+        target: 'es2019',
+        minify: 'esbuild',
+      },
+    }
+  }
+
+  // Для библиотеки используем существующую конфигурацию
   return {
     plugins: [react()],
     build: {

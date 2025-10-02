@@ -9,6 +9,7 @@
     "build:types": "tsc -p tsconfig.types.json",
     "build:lib": "vite build",
     "build:init": "cross-env BUILD_INIT=true vite build",
+    "build:demo": "cross-env BUILD_DEMO=true vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"src/**/*.css\"",
