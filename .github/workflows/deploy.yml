@@ -4,12 +4,6 @@ on:
   push:
     branches: [ main, dev ]
 
-# Устанавливаем права для записи в репозиторий
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -17,8 +11,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Нужно для работы с историей git
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -38,4 +30,3 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
         cname: prodvizheniechatbot.github.io
-        force_orphan: true
