@@ -10,12 +10,16 @@
 }
 
 .fullscreenWidget {
-  position: relative;
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100vw;
   height: 100vh;
-  max-width: var(--widget-max-width, 100%);
-  max-height: var(--widget-max-height, 100vh);
-  margin: 0 auto;
+  max-width: none;
+  max-height: none;
+
+  margin: 0;
 }
 
 @media (max-width: 768px) {

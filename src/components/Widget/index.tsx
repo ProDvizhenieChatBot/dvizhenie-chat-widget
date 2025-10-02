@@ -25,6 +25,9 @@ const Widget: React.FC<ChatWidgetProps> = () => {
       // В Telegram WebApp виджет всегда открыт
       setIsOpen(true)
 
+      // Добавляем класс для полноэкранного режима
+      document.body.classList.add('telegram-fullscreen')
+
       // Настраиваем кнопку "Назад" в Telegram
       tgWebApp.BackButton.onClick(() => {
         tgWebApp.close()
@@ -37,7 +40,14 @@ const Widget: React.FC<ChatWidgetProps> = () => {
     }
 
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      // Убираем класс при размонтировании
+      if (tgWebApp) {
+        document.body.classList.remove('telegram-fullscreen')
+      }
+    }
   }, [])
 
   const handleClose = () => {
