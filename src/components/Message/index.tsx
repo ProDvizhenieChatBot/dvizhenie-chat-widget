@@ -21,12 +21,22 @@ export interface MessageProps {
   buttons?: MessageButton[]
   files?: ChatFile[]
   isProcessingButton?: boolean
+  buttonsDisabled?: boolean
   onButtonClick?: (button: MessageButton) => void
   onFileDownload?: (file: ChatFile) => void
 }
 
 const Message: React.FC<MessageProps> = React.memo(
-  ({ text, isBot, buttons, files, isProcessingButton = false, onButtonClick, onFileDownload }) => {
+  ({
+    text,
+    isBot,
+    buttons,
+    files,
+    isProcessingButton = false,
+    buttonsDisabled = false,
+    onButtonClick,
+    onFileDownload,
+  }) => {
     const handleButtonClick = useCallback(
       (button: MessageButton) => {
         if (!isProcessingButton && onButtonClick) {
@@ -66,7 +76,7 @@ const Message: React.FC<MessageProps> = React.memo(
                   key={button.id}
                   variant="default"
                   onClick={() => handleButtonClick(button)}
-                  disabled={isProcessingButton}
+                  disabled={isProcessingButton || buttonsDisabled}
                 >
                   {isProcessingButton ? '⏳ Обрабатываем...' : button.text}
                 </Button>

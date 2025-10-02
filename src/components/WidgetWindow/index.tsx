@@ -319,15 +319,20 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
 
   // Обогащаем сообщения для передачи в MessagesList
   const enrichedMessages = useMemo(() => {
-    return messages.map((message, index) => ({
-      ...message,
-      isProcessingButton,
-      onButtonClick:
-        message.isBot && message.buttons && index === lastBotMessageIndex
-          ? handleButtonClick
-          : undefined,
-      onFileDownload,
-    }))
+    return messages.map((message, index) => {
+      const isLastBotMessage = message.isBot && message.buttons && index === lastBotMessageIndex
+
+      return {
+        ...message,
+        // isProcessingButton только для последнего сообщения бота с кнопками
+        isProcessingButton: isLastBotMessage ? isProcessingButton : false,
+        // onButtonClick только для последнего сообщения бота с кнопками
+        onButtonClick: isLastBotMessage ? handleButtonClick : undefined,
+        // Для предыдущих сообщений кнопки должны быть заблокированы
+        buttonsDisabled: !isLastBotMessage,
+        onFileDownload,
+      }
+    })
   }, [messages, isProcessingButton, lastBotMessageIndex, handleButtonClick, onFileDownload])
 
   if (isComplete) {
