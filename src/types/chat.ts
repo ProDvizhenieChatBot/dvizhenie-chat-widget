@@ -60,6 +60,16 @@ export interface FormData {
   submitForm?: boolean
 }
 
+export interface ChatFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  url?: string
+  uploadProgress?: number
+  error?: string
+}
+
 export interface ChatStep {
   id: string
   type: 'message' | 'buttons' | 'input' | 'file-upload'

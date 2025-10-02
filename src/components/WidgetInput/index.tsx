@@ -2,6 +2,7 @@ import { Paperclip, Mic } from 'lucide-react'
 import React, { useState, useRef, useEffect } from 'react'
 
 import { getValidatorByType, type ValidationResult } from '../../utils/validation'
+import FileDropdown from '../FileDropdown'
 
 import styles from './styles.module.css'
 
@@ -10,6 +11,8 @@ export interface WidgetInputProps {
   onSend: (message: string) => void
   onFileUpload?: (files: FileList) => void
   onVoiceRecord?: () => void
+  onCameraClick?: () => void
+  onGalleryClick?: () => void
   stepType?: string
   placeholder?: string
 }
@@ -19,11 +22,14 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
   onSend,
   onFileUpload,
   onVoiceRecord,
+  onCameraClick,
+  onGalleryClick,
   stepType,
   placeholder = 'Введите сообщение и нажмите Enter',
 }) => {
   const [value, setValue] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [isFileDropdownOpen, setIsFileDropdownOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -84,7 +90,17 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
   }
 
   const handleAttachClick = () => {
-    fileInputRef.current?.click()
+    setIsFileDropdownOpen((prev) => !prev)
+  }
+
+  const handleFileDropdownClose = () => {
+    setIsFileDropdownOpen(false)
+  }
+
+  const handleFileSelect = (files: FileList) => {
+    if (onFileUpload) {
+      onFileUpload(files)
+    }
   }
 
   const handleVoiceClick = () => {
@@ -120,13 +136,23 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
         />
 
         <div className={styles.actions}>
-          <button
-            onClick={handleAttachClick}
-            className={styles.actionButton}
-            aria-label="Прикрепить файл"
-          >
-            <Paperclip size={20} />
-          </button>
+          <div className={styles.attachButtonContainer}>
+            <button
+              onClick={handleAttachClick}
+              className={`${styles.actionButton} ${isFileDropdownOpen ? styles.active : ''}`}
+              aria-label="Прикрепить файл"
+            >
+              <Paperclip size={20} />
+            </button>
+
+            <FileDropdown
+              isOpen={isFileDropdownOpen}
+              onClose={handleFileDropdownClose}
+              onFileSelect={handleFileSelect}
+              onCameraClick={onCameraClick}
+              onGalleryClick={onGalleryClick}
+            />
+          </div>
 
           <button
             onClick={handleVoiceClick}

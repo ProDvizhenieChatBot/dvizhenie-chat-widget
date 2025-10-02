@@ -58,8 +58,10 @@ const MessagesList: React.FC<MessagesListProps> = React.memo(({ messages }) => {
           text={message.text}
           isBot={message.isBot}
           buttons={message.buttons}
+          files={message.files}
           isProcessingButton={message.isProcessingButton}
           onButtonClick={message.onButtonClick}
+          onFileDownload={message.onFileDownload}
         />
       ))}
     </ul>

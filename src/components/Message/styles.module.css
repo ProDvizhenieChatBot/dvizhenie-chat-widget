@@ -57,6 +57,10 @@
   color: var(--color-white);
 }
 
+.fileContainer {
+  margin-top: 4px;
+}
+
 .buttons {
   display: flex;
   flex-direction: row;
