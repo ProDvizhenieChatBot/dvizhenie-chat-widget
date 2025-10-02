@@ -12,17 +12,17 @@
 }
 
 .fileContent {
+  border: 1px solid var(--color-secondary);
   border-radius: var(--widget-border-radius);
-  overflow: hidden;
+  background: var(--color-white);
   cursor: pointer;
   transition: all var(--transition-fast);
-  background: var(--color-white);
-  border: 1px solid var(--color-secondary);
+  overflow: hidden;
 }
 
 .fileContent:hover {
-  box-shadow: var(--shadow-light);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
 }
 
 .imageFile {
@@ -37,19 +37,19 @@
 }
 
 .thumbnail {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .imageOverlay {
   position: absolute;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   padding: var(--spacing-md);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   color: white;
 }
 
@@ -57,8 +57,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
   min-height: 60px;
+  padding: var(--spacing-md);
 }
 
 .iconWrapper {
@@ -79,11 +79,11 @@
 }
 
 .fileName {
+  color: var(--color-black);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--color-black);
-  margin-bottom: var(--spacing-xs);
   overflow: hidden;
+  margin-bottom: var(--spacing-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -92,8 +92,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-xs);
   color: var(--color-gray);
+  font-size: var(--font-size-xs);
 }
 
 .fileSize {
@@ -101,10 +101,10 @@
 }
 
 .fileExtension {
-  background: var(--color-primary);
-  color: white;
   padding: 2px 6px;
   border-radius: 4px;
+  background: var(--color-primary);
+  color: white;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -169,21 +169,21 @@
 
 .progressContainer {
   position: absolute;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  padding: var(--spacing-sm);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .progressBar {
   flex: 1;
   height: 4px;
-  background: var(--color-secondary);
   border-radius: 2px;
+  background: var(--color-secondary);
   overflow: hidden;
 }
 
@@ -194,9 +194,9 @@
 }
 
 .progressText {
-  font-size: var(--font-size-xs);
-  color: var(--color-gray);
   min-width: 35px;
+  color: var(--color-gray);
+  font-size: var(--font-size-xs);
   text-align: right;
 }
 
@@ -204,24 +204,24 @@
 .imageModal {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  left: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: var(--spacing-lg);
+  background: rgba(0, 0, 0, 0.9);
 }
 
 .modalContent {
   position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 90vw;
+  max-height: 90vh;
 }
 
 .modalImage {
@@ -235,15 +235,15 @@
   position: absolute;
   top: -40px;
   right: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  cursor: pointer;
-  padding: var(--spacing-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--spacing-sm);
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
   transition: background var(--transition-fast);
 }
 

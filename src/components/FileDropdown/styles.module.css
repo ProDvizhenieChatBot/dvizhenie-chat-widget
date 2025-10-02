@@ -1,44 +1,65 @@
 .backdrop {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: transparent;
+  left: 0;
   z-index: 999;
+  background: transparent;
   pointer-events: auto;
 }
 
 .dropdown {
   position: absolute;
-  bottom: calc(100% + var(--spacing-sm));
   right: 0;
-  min-width: 180px;
-  max-width: 220px;
-  background: var(--color-white);
-  border-radius: 8px;
-  box-shadow: var(--shadow-medium);
-  padding: var(--spacing-xs);
+  bottom: calc(100% + var(--spacing-sm));
   z-index: 1000;
+  max-width: 220px;
+  min-width: 180px;
+  padding: var(--spacing-xs);
+  border-radius: 8px;
+  background: var(--color-white);
   animation: slideUpFade 0.2s ease-out;
+  box-shadow: var(--shadow-medium);
 }
 
 .option {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: 6px;
-  cursor: pointer !important;
-  transition: all var(--transition-fast);
-  user-select: none;
-  background: var(--color-white);
-  border: none;
   width: 100%;
-  text-align: left;
-  outline: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: 6px;
+  background: var(--color-white);
   font-family: inherit;
   font-size: inherit;
+  text-align: left;
+  cursor: pointer !important;
+  transition: all var(--transition-fast);
+  outline: none;
+  user-select: none;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  color: var(--color-primary);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.text {
+  color: var(--color-black);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: var(--line-height-sm);
+  transition: color var(--transition-fast);
 }
 
 .option:hover {
@@ -59,32 +80,12 @@
   transform: scale(0.98);
 }
 
-.iconWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--color-secondary);
-  color: var(--color-primary);
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.text {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-black);
-  line-height: var(--line-height-sm);
-  transition: color var(--transition-fast);
-}
-
 @keyframes slideUpFade {
   from {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -95,7 +96,7 @@
 @media (max-width: 768px) {
   .dropdown {
     right: 0;
-    min-width: 160px;
     max-width: 200px;
+    min-width: 160px;
   }
 }
