@@ -1,7 +1,14 @@
 export { default as ChatWidget } from './components/Widget'
 export type { ChatWidgetProps } from './components/Widget'
 
-export type { FormData, ChatStep, ChatState } from './types/chat'
+export type { FormData, ChatStep, ChatState, ChatFile } from './types/chat'
+
+export { default as FileDropdown } from './components/FileDropdown'
+export type { FileDropdownProps } from './components/FileDropdown'
+
+export { default as FileMessage } from './components/FileMessage'
+export type { FileMessageProps } from './components/FileMessage'
+
 export type { ScenarioStep, ScenarioData, UserAnswers } from './hooks/useScenario'
 
 export { DvizhenieWidget, initDvizhenieWidget } from './init'

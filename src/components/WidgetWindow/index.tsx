@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 
 import { useScenario, type ScenarioStep } from '../../hooks/useScenario'
+import type { ChatFile } from '../../types/chat'
 import {
   safeAsync,
   handleSubmissionError,
@@ -25,6 +26,7 @@ interface ChatMessage {
   text: string
   isBot: boolean
   buttons?: MessageButton[]
+  files?: ChatFile[]
 }
 
 export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscreen = false }) => {
@@ -182,18 +184,127 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
     [currentStep, handleUserAnswer],
   )
 
+  const convertFilesToChatFiles = useCallback((files: FileList): ChatFile[] => {
+    const maxFileSize = 10 * 1024 * 1024 // 10MB
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+    ]
+
+    return Array.from(files)
+      .filter((file) => {
+        if (file.size > maxFileSize) {
+          console.warn(`Файл ${file.name} слишком большой (${file.size} байт)`)
+          return false
+        }
+        if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+          console.warn(`Тип файла ${file.type} не поддерживается`)
+          return false
+        }
+        return true
+      })
+      .map((file) => ({
+        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+      }))
+  }, [])
+
+  // Очистка URL объектов при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      messages.forEach((message) => {
+        if (message.files) {
+          message.files.forEach((file) => {
+            if (file.url) {
+              URL.revokeObjectURL(file.url)
+            }
+          })
+        }
+      })
+    }
+  }, [messages])
+
   const onFileUpload = useCallback(
     (files: FileList) => {
-      const fileNames = Array.from(files)
-        .map((file) => file.name)
-        .join(', ')
-      onSend(`📎 Файлы: ${fileNames}`)
+      const chatFiles = convertFilesToChatFiles(files)
+
+      // Создаем сообщение с файлами
+      const fileMessage: ChatMessage = {
+        id: `user-files-${Date.now()}`,
+        text: '',
+        isBot: false,
+        files: chatFiles,
+      }
+
+      setMessages((prev) => [...prev, fileMessage])
+
+      // Отправляем текстовое сообщение для обработки в сценарии
+      const fileNames = chatFiles.map((f) => f.name).join(', ')
+      handleUserAnswer(`📎 Файлы: ${fileNames}`)
     },
-    [onSend],
+    [convertFilesToChatFiles, handleUserAnswer],
   )
 
   const onVoiceRecord = useCallback(() => {
     console.log('Voice recording not implemented yet')
+  }, [])
+
+  const onCameraClick = useCallback(() => {
+    // Создаем input для камеры
+    const cameraInput = document.createElement('input')
+    cameraInput.type = 'file'
+    cameraInput.accept = 'image/*'
+    cameraInput.capture = 'environment' // Задняя камера по умолчанию
+    cameraInput.style.display = 'none'
+
+    cameraInput.onchange = (e) => {
+      const target = e.target as HTMLInputElement
+      if (target.files && target.files.length > 0) {
+        onFileUpload(target.files)
+      }
+      document.body.removeChild(cameraInput)
+    }
+
+    document.body.appendChild(cameraInput)
+    cameraInput.click()
+  }, [onFileUpload])
+
+  const onGalleryClick = useCallback(() => {
+    // Создаем input для галереи
+    const galleryInput = document.createElement('input')
+    galleryInput.type = 'file'
+    galleryInput.accept = 'image/*'
+    galleryInput.multiple = true
+    galleryInput.style.display = 'none'
+
+    galleryInput.onchange = (e) => {
+      const target = e.target as HTMLInputElement
+      if (target.files && target.files.length > 0) {
+        onFileUpload(target.files)
+      }
+      document.body.removeChild(galleryInput)
+    }
+
+    document.body.appendChild(galleryInput)
+    galleryInput.click()
+  }, [onFileUpload])
+
+  const onFileDownload = useCallback((file: ChatFile) => {
+    if (file.url) {
+      const link = document.createElement('a')
+      link.href = file.url
+      link.download = file.name
+      link.click()
+    }
   }, [])
 
   // Определяем индекс последнего сообщения бота с кнопками
@@ -215,8 +326,9 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
         message.isBot && message.buttons && index === lastBotMessageIndex
           ? handleButtonClick
           : undefined,
+      onFileDownload,
     }))
-  }, [messages, isProcessingButton, lastBotMessageIndex, handleButtonClick])
+  }, [messages, isProcessingButton, lastBotMessageIndex, handleButtonClick, onFileDownload])
 
   if (isComplete) {
     return (
@@ -258,6 +370,8 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
           onSend={onSend}
           onFileUpload={onFileUpload}
           onVoiceRecord={onVoiceRecord}
+          onCameraClick={onCameraClick}
+          onGalleryClick={onGalleryClick}
         />
       )}
     </div>

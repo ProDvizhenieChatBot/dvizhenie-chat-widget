@@ -42,6 +42,10 @@
   gap: var(--spacing-xs);
 }
 
+.attachButtonContainer {
+  position: relative;
+}
+
 .actionButton {
   display: flex;
   align-items: center;
@@ -56,7 +60,8 @@
   transition: all var(--transition-fast);
 }
 
-.actionButton:hover {
+.actionButton:hover,
+.actionButton.active {
   background: rgba(199, 210, 233, 0.2);
   color: var(--color-primary);
 }

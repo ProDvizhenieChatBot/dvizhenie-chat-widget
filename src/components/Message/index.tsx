@@ -1,7 +1,9 @@
 import clsx from 'clsx'
 import React, { useCallback } from 'react'
 
+import type { ChatFile } from '../../types/chat'
 import Button from '../Button'
+import FileMessage from '../FileMessage'
 
 import styles from './styles.module.css'
 
@@ -17,12 +19,14 @@ export interface MessageProps {
   text: string
   isBot: boolean
   buttons?: MessageButton[]
+  files?: ChatFile[]
   isProcessingButton?: boolean
   onButtonClick?: (button: MessageButton) => void
+  onFileDownload?: (file: ChatFile) => void
 }
 
 const Message: React.FC<MessageProps> = React.memo(
-  ({ text, isBot, buttons, isProcessingButton = false, onButtonClick }) => {
+  ({ text, isBot, buttons, files, isProcessingButton = false, onButtonClick, onFileDownload }) => {
     const handleButtonClick = useCallback(
       (button: MessageButton) => {
         if (!isProcessingButton && onButtonClick) {
@@ -41,9 +45,19 @@ const Message: React.FC<MessageProps> = React.memo(
         )}
 
         <div className={styles.content}>
-          <div className={clsx(styles.bubble, isBot ? styles.botBubble : styles.userBubble)}>
-            {text}
-          </div>
+          {text && (
+            <div className={clsx(styles.bubble, isBot ? styles.botBubble : styles.userBubble)}>
+              {text}
+            </div>
+          )}
+
+          {files && files.length > 0 && (
+            <FileMessage
+              files={files}
+              onFileDownload={onFileDownload}
+              className={styles.fileContainer}
+            />
+          )}
 
           {buttons && buttons.length > 0 && (
             <div className={styles.buttons}>
