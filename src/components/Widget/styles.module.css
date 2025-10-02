@@ -1,0 +1,36 @@
+.widget {
+  position: fixed;
+  right: var(--widget-right-offset);
+  bottom: var(--widget-bottom-offset);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xl);
+}
+
+.fullscreenWidget {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  max-width: var(--widget-max-width, 100%);
+  max-height: var(--widget-max-height, 100vh);
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .widget {
+    right: var(--widget-mobile-offset);
+    bottom: var(--widget-mobile-offset);
+    left: var(--widget-mobile-offset);
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .widget {
+    right: var(--widget-mobile-small-offset);
+    bottom: var(--widget-mobile-small-offset);
+    left: var(--widget-mobile-small-offset);
+  }
+}

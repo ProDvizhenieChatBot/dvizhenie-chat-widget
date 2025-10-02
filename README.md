@@ -5,8 +5,9 @@ Embeddable React + TypeScript chat widget built with Vite (library mode).
 ## Tech Stack
 
 - **Build Tool**: [Vite](https://vitejs.dev/) - Fast build tool and dev server
-- **Framework**: [React](https://react.dev/) - JavaScript library for building user interfaces
+- **Framework**: [React 19](https://react.dev/) - JavaScript library for building user interfaces
 - **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+- **Styling**: CSS Modules + [Stylelint](https://stylelint.io/) - Scoped styles with linting
 - **Linting**: [ESLint](https://eslint.org/) - Code linting
 - **Formatting**: [Prettier](https://prettier.io/) - Code formatting
 - **Testing**: [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) - Testing framework
@@ -22,22 +23,60 @@ Embeddable React + TypeScript chat widget built with Vite (library mode).
 
 ## Usage
 
-### On a website (CDN script)
+The widget is embedded **only via script inclusion**. It automatically detects the platform (website or Telegram WebApp) and adapts accordingly.
+
+### On a Website
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@dvizhenie/chat-widget/dist/dvizhenie-chat-widget.iife.js"></script>
+<!-- Include React (if not already included) -->
+<script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+
+<!-- Include the widget -->
+<script src="https://your-cdn.com/dvizhenie-chat-widget-init.iife.js"></script>
+
 <script>
-  // Widget functionality will be available via window.DvizhenieChat
-  // Implementation details coming soon
+  // Initialize the widget - no configuration needed!
+  const widget = initDvizhenieWidget()
+
+  // Optional: custom configuration
+  // const widget = initDvizhenieWidget({
+  //   customConfig: { maxWidth: 450, maxHeight: 650 }
+  // });
 </script>
 ```
 
-### Via npm
+### In Telegram WebApp
 
-```ts
-import { DvizhenieChat } from '@dvizhenie/chat-widget'
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Widget</title>
+  </head>
+  <body>
+    <!-- Telegram WebApp API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-// Widget functionality coming soon
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"
+    ></script>
+
+    <!-- Widget -->
+    <script src="https://your-cdn.com/dvizhenie-chat-widget-init.iife.js"></script>
+
+    <script>
+      // Widget automatically detects Telegram WebApp and opens fullscreen
+      // All data handling is done internally!
+      const widget = initDvizhenieWidget()
+    </script>
+  </body>
+</html>
 ```
 
 ## Development
@@ -56,6 +95,9 @@ npm run dev
 
 The development server will be available at `http://localhost:5173`
 
+- **🌐 Website mode** - `http://localhost:5173`
+- **📲 Telegram WebApp mode** - `http://localhost:5173?mode=telegram`
+
 ## Production
 
 ### Build and Start Production Server
@@ -71,11 +113,14 @@ The production build will be available at `http://localhost:4173`
 ## Available Scripts
 
 - `npm run dev` - Start development server
-- `npm run build` - Build for production
+- `npm run build` - Build for production (creates both main and init bundles)
+- `npm run build:lib` - Build main library bundle
+- `npm run build:init` - Build initialization bundle for script integration
 - `npm run start` - Start production server
 - `npm run build:types` - Generate TypeScript declarations
-- `npm run lint` / `npm run lint:fix` - ESLint
-- `npm run format` / `npm run format:check` - Prettier
+- `npm run lint` / `npm run lint:fix` - ESLint code linting
+- `npm run lint:css` / `npm run lint:css:fix` - Stylelint CSS linting
+- `npm run format` / `npm run format:check` - Prettier formatting
 - `npm run test` / `npm run test:watch` / `npm run test:coverage` - Testing (Vitest)
 - `npm run preview` - Preview production build (requires build first)
 
@@ -91,11 +136,89 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/). 
 
 GitHub Actions automatically runs on every pull request:
 
-- Linting (ESLint, Prettier)
+- Linting (ESLint, Stylelint, Prettier)
 - Type checking
 - Testing (when test files are present)
 - Build verification
 
-## Deployment
+## Build & Deployment
 
-The widget is published to npm and can be used via CDN or installed as a dependency.
+### Building the Project
+
+```bash
+# Install dependencies
+npm ci
+
+# Build for production
+npm run build
+```
+
+After building, the following files will be created in the `dist/` folder:
+
+- `dvizhenie-chat-widget-init.iife.js` - **main file for embedding**
+- `dvizhenie-chat-widget-init.iife.js.map` - source map
+- `dvizhenie-chat-widget.es.js` - ES modules (for developers)
+- `dvizhenie-chat-widget.umd.js` - UMD format (for developers)
+- `chat-widget.css` - widget styles
+
+### Deployment
+
+1. **Upload files to CDN or static hosting:**
+
+   ```
+   your-cdn.com/
+   ├── dvizhenie-chat-widget-init.iife.js
+   ├── dvizhenie-chat-widget-init.iife.js.map
+   └── chat-widget.css
+   ```
+
+2. **Popular hosting options:**
+   - **GitHub Pages** - free for public repositories
+   - **Netlify** - free plan with CDN
+   - **Vercel** - free plan with auto-deploy
+   - **AWS CloudFront** - professional CDN
+   - **jsDelivr** - free CDN for npm packages
+
+3. **CORS setup (if needed):**
+   ```
+   Access-Control-Allow-Origin: *
+   Access-Control-Allow-Methods: GET, OPTIONS
+   ```
+
+### Integration
+
+After deployment, replace `https://your-cdn.com/` with your actual CDN URL in the examples above.
+
+**For websites:**
+
+```html
+<script src="https://your-actual-cdn.com/dvizhenie-chat-widget-init.iife.js"></script>
+```
+
+**For Telegram WebApp:**
+Create an HTML file with the code from the example above and host it, then specify the URL in your bot settings.
+
+### Widget Configuration
+
+```javascript
+const widget = initDvizhenieWidget({
+  // Element ID for mounting (optional)
+  containerId: 'my-widget-container',
+
+  // CSS class for container
+  className: 'my-custom-widget'
+});
+
+// Widget control methods
+widget.destroy();           // Remove widget
+widget.updateConfig({...}); // Update configuration
+```
+
+**Note:** All form submission and data handling is done internally by the widget. No external configuration needed!
+
+### Responsive Design
+
+The widget automatically adapts to the platform:
+
+- **Website**: Button in bottom-right corner, opens chat window
+- **Telegram WebApp**: Fullscreen mode without button, no rounded corners
