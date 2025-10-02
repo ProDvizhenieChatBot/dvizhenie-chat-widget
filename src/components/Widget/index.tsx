@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
+import type { DvizhenieWidgetConfig } from '../../init'
 import { getPlatformConfig, getTelegramWebApp, isTelegramWebApp } from '../../utils/platform'
 import WidgetButton from '../WidgetButton'
 import WidgetWindow from '../WidgetWindow'
@@ -8,9 +9,10 @@ import styles from './styles.module.css'
 
 export interface ChatWidgetProps {
   className?: string
+  config?: DvizhenieWidgetConfig
 }
 
-const Widget: React.FC<ChatWidgetProps> = () => {
+const Widget: React.FC<ChatWidgetProps> = ({ config }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [platformConfig, setPlatformConfig] = useState(getPlatformConfig())
 
@@ -63,7 +65,7 @@ const Widget: React.FC<ChatWidgetProps> = () => {
   if (platformConfig.isFullscreen) {
     return (
       <div className={styles.fullscreenWidget}>
-        <WidgetWindow onClose={handleClose} isFullscreen={true} />
+        <WidgetWindow onClose={handleClose} isFullscreen={true} config={config} />
       </div>
     )
   }
@@ -71,7 +73,7 @@ const Widget: React.FC<ChatWidgetProps> = () => {
   // На обычном сайте показываем виджет с кнопкой
   return (
     <div className={styles.widget}>
-      {isOpen && <WidgetWindow onClose={handleClose} />}
+      {isOpen && <WidgetWindow onClose={handleClose} config={config} />}
       <WidgetButton onClick={() => setIsOpen((v) => !v)} isOpen={isOpen} />
     </div>
   )

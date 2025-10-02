@@ -1,8 +1,11 @@
-import { Paperclip, Mic } from 'lucide-react'
+import { Paperclip } from 'lucide-react'
 import React, { useState, useRef, useEffect } from 'react'
 
+import { useVoiceInput } from '../../hooks/useVoiceInput'
+import type { DvizhenieWidgetConfig } from '../../init'
 import { getValidatorByType, type ValidationResult } from '../../utils/validation'
 import FileDropdown from '../FileDropdown'
+import VoiceButton from '../VoiceButton'
 
 import styles from './styles.module.css'
 
@@ -10,28 +13,43 @@ export interface WidgetInputProps {
   isFullscreen: boolean
   onSend: (message: string) => void
   onFileUpload?: (files: FileList) => void
-  onVoiceRecord?: () => void
   onCameraClick?: () => void
   onGalleryClick?: () => void
   stepType?: string
   placeholder?: string
+  config?: DvizhenieWidgetConfig
 }
 
 export const WidgetInput: React.FC<WidgetInputProps> = ({
   isFullscreen,
   onSend,
   onFileUpload,
-  onVoiceRecord,
   onCameraClick,
   onGalleryClick,
   stepType,
   placeholder = 'Введите сообщение и нажмите Enter',
+  config,
 }) => {
   const [value, setValue] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isFileDropdownOpen, setIsFileDropdownOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Голосовой ввод
+  const voiceInput = useVoiceInput({
+    onTextRecognized: (text) => {
+      setValue(text)
+      // Автоматически отправляем распознанный текст
+      setTimeout(() => {
+        validateAndSend(text)
+      }, 100)
+    },
+    onError: (error) => {
+      setValidationError(error)
+    },
+    saluteSpeechToken: config?.saluteSpeechToken,
+  })
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -74,14 +92,6 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
     }
   }
 
-  // Очищаем ошибку при изменении значения
-  const handleValueChange = (newValue: string) => {
-    setValue(newValue)
-    if (validationError) {
-      setValidationError(null)
-    }
-  }
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0 && onFileUpload) {
@@ -103,9 +113,14 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
     }
   }
 
-  const handleVoiceClick = () => {
-    if (onVoiceRecord) {
-      onVoiceRecord()
+  // Очищаем ошибки голосового ввода при изменении текста
+  const handleValueChange = (newValue: string) => {
+    setValue(newValue)
+    if (validationError) {
+      setValidationError(null)
+    }
+    if (voiceInput.state.error) {
+      voiceInput.clearError()
     }
   }
 
@@ -120,7 +135,9 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
         multiple
       />
 
-      {validationError && <div className={styles.errorMessage}>{validationError}</div>}
+      {(validationError || voiceInput.state.error) && (
+        <div className={styles.errorMessage}>{validationError || voiceInput.state.error}</div>
+      )}
 
       <div
         className={`${styles.inputContainer} ${isFullscreen ? styles.fullscreenInputContainer : ''}`}
@@ -131,7 +148,7 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
           onChange={(e) => handleValueChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`${styles.textarea} ${validationError ? styles.textareaError : ''}`}
+          className={`${styles.textarea} ${validationError || voiceInput.state.error ? styles.textareaError : ''}`}
           rows={1}
         />
 
@@ -154,13 +171,19 @@ export const WidgetInput: React.FC<WidgetInputProps> = ({
             />
           </div>
 
-          <button
-            onClick={handleVoiceClick}
-            className={styles.actionButton}
-            aria-label="Голосовое сообщение"
-          >
-            <Mic size={20} />
-          </button>
+          {/* Кнопка голосового ввода доступна только при наличии токена */}
+          {config?.saluteSpeechToken && (
+            <VoiceButton
+              isRecording={voiceInput.state.isRecording}
+              isProcessing={voiceInput.state.isProcessing}
+              duration={voiceInput.state.duration}
+              error={voiceInput.state.error}
+              onStartRecording={voiceInput.startRecording}
+              onStopRecording={voiceInput.stopRecording}
+              onCancelRecording={voiceInput.cancelRecording}
+              className={styles.actionButton}
+            />
+          )}
         </div>
       </div>
     </div>
