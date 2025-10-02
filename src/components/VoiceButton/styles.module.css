@@ -6,6 +6,7 @@
 }
 
 .voiceButton {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -17,7 +18,6 @@
   color: var(--color-gray);
   cursor: pointer;
   transition: all var(--transition-fast);
-  position: relative;
 }
 
 .voiceButton:hover {
@@ -63,9 +63,11 @@
   0% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
+
   70% {
     box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
@@ -85,6 +87,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -96,18 +99,18 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background: rgba(239, 68, 68, 0.1);
   border-radius: var(--widget-border-radius-small);
-  font-size: var(--font-size-xs);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--color-error);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
 }
 
 .recordingDot {
   width: 8px;
   height: 8px;
-  background: var(--color-error);
   border-radius: 50%;
+  background: var(--color-error);
   animation: blink 1s ease-in-out infinite;
 }
 
@@ -116,6 +119,7 @@
   50% {
     opacity: 1;
   }
+
   51%,
   100% {
     opacity: 0.3;
@@ -123,9 +127,9 @@
 }
 
 .duration {
+  min-width: 32px;
   font-family: var(--font-family);
   font-weight: 500;
-  min-width: 32px;
 }
 
 /* Тултип с ошибкой */
@@ -133,24 +137,24 @@
   position: absolute;
   top: -40px;
   left: 50%;
-  transform: translateX(-50%);
+  z-index: 1000;
   padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--widget-border-radius-small);
   background: var(--color-error);
   color: var(--color-white);
   font-size: var(--font-size-xs);
-  border-radius: var(--widget-border-radius-small);
-  white-space: nowrap;
-  z-index: 1000;
+  transform: translateX(-50%);
   animation: fadeIn 0.2s ease-out;
+  white-space: nowrap;
 }
 
 .errorTooltip::after {
-  content: '';
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%);
   border: 4px solid transparent;
+  transform: translateX(-50%);
+  content: '';
   border-top-color: var(--color-error);
 }
 
@@ -159,6 +163,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(-5px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -177,9 +182,9 @@
   }
 
   .errorTooltip {
-    font-size: 11px;
     max-width: 200px;
-    white-space: normal;
+    font-size: 11px;
     text-align: center;
+    white-space: normal;
   }
 }
