@@ -82,8 +82,10 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
         isBot: true,
       })
 
-      // Показываем все видимые поля текущего шага
+      // Показываем только info поля и первое незаполненное поле с кнопками
       if (currentStep.fields) {
+        let firstButtonFieldShown = false
+
         currentStep.fields.forEach((field, index) => {
           if (shouldShowField(field, formData)) {
             if (field.type === 'info') {
@@ -93,8 +95,13 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                 text: field.text || field.label,
                 isBot: true,
               })
-            } else if (field.type === 'single_choice_buttons' && field.options) {
-              // Поля с кнопками как сообщения с кнопками
+            } else if (
+              field.type === 'single_choice_buttons' &&
+              field.options &&
+              !firstButtonFieldShown &&
+              !formData[field.field_id]
+            ) {
+              // Показываем только первое незаполненное поле с кнопками
               newMessages.push({
                 id: `bot-${currentStepId}-buttons-${index}-${Date.now()}`,
                 text: field.label,
@@ -106,6 +113,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                   value: option,
                 })),
               })
+              firstButtonFieldShown = true
             }
           }
         })
@@ -139,25 +147,50 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
       const newStepData = { ...currentStepData, [fieldId]: fieldValue }
       setCurrentStepData(newStepData)
 
-      // Проверяем, все ли обязательные поля заполнены
-      const requiredFields =
-        currentStep?.fields?.filter(
-          (field) => field.required && shouldShowField(field, formData),
-        ) || []
-
-      const allRequiredFilled = requiredFields.every(
-        (field) => newStepData[field.field_id] || formData[field.field_id],
-      )
-
       setTimeout(async () => {
         try {
-          if (allRequiredFilled) {
-            // Все обязательные поля заполнены, переходим к следующему шагу
-            await goToNextStep(newStepData)
+          // Ищем следующее незаполненное поле с кнопками
+          const combinedData = { ...formData, ...newStepData }
+          const nextButtonField = currentStep?.fields?.find(
+            (field) =>
+              field.type === 'single_choice_buttons' &&
+              field.options &&
+              !combinedData[field.field_id] &&
+              shouldShowField(field, combinedData),
+          )
+
+          if (nextButtonField) {
+            // Есть следующее поле с кнопками - показываем его
+            const newBotMessage: ChatMessage = {
+              id: `bot-${currentStepId}-field-${nextButtonField.field_id}-${Date.now()}`,
+              text: nextButtonField.label,
+              isBot: true,
+              buttons: nextButtonField.options!.map((option, optIndex) => ({
+                id: `${nextButtonField.field_id}-${optIndex}`,
+                text: option,
+                action: 'field_answer',
+                value: option,
+              })),
+            }
+            setMessages((prev) => [...prev, newBotMessage])
             setIsProcessing(false)
           } else {
-            // Еще не все поля заполнены, остаемся на текущем шаге
-            setIsProcessing(false)
+            // Нет больше полей с кнопками, проверяем обязательные поля
+            const requiredFields =
+              currentStep?.fields?.filter(
+                (field) => field.required && shouldShowField(field, combinedData),
+              ) || []
+
+            const allRequiredFilled = requiredFields.every((field) => combinedData[field.field_id])
+
+            if (allRequiredFilled) {
+              // Все обязательные поля заполнены, переходим к следующему шагу
+              await goToNextStep(newStepData)
+              setIsProcessing(false)
+            } else {
+              // Еще не все поля заполнены, остаемся на текущем шаге
+              setIsProcessing(false)
+            }
           }
         } catch (error) {
           console.error('Ошибка обработки поля:', error)
@@ -166,7 +199,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
         }
       }, 500)
     },
-    [isProcessing, currentStep, formData, currentStepData, goToNextStep],
+    [isProcessing, currentStep, currentStepId, formData, currentStepData, goToNextStep],
   )
 
   // Обработка отправки формы
