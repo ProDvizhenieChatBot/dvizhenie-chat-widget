@@ -22,7 +22,7 @@
   --color-background-error: #fee;
 
   /* Шрифт */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, sans-serif;
 
   /* Размеры */
   --widget-padding: 8px;
