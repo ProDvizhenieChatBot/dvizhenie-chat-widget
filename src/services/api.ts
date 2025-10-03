@@ -224,15 +224,20 @@ class ApiService {
   }
 
   /**
-   * Загрузить файл в file-storage-service (Шаг 1)
+   * Загрузить файл и привязать к заявке (объединенный метод)
+   * Вместо двух отдельных запросов делаем один с multipart/form-data
    */
-  async uploadFile(
+  async uploadAndLinkFile(
+    applicationUuid: string,
     file: File,
-  ): Promise<{ file_id: string; filename: string; content_type: string }> {
+    formFieldId: string,
+  ): Promise<{ file_id: string }> {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('form_field_id', formFieldId)
+    formData.append('original_filename', file.name)
 
-    const response = await fetch(`${this.baseUrl}/api/v1/files/upload`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/applications/${applicationUuid}/files`, {
       method: 'POST',
       body: formData,
     })
@@ -246,8 +251,8 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Файл загружен:', data)
-    return data
+    console.log('Файл загружен и привязан:', data)
+    return { file_id: data }
   }
 
   /**
@@ -275,7 +280,8 @@ class ApiService {
   }
 
   /**
-   * Привязать файл к заявке (Шаг 2)
+   * Привязать уже загруженный файл к заявке (если file_id уже известен)
+   * Используется редко, обычно используется uploadAndLinkFile
    */
   async linkFileToApplication(
     applicationUuid: string,
