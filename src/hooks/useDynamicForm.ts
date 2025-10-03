@@ -93,7 +93,7 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
     setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
     try {
-       console.log('Инициализация динамической формы...')
+      console.log('Инициализация динамической формы...')
 
       // Получаем схему формы
       const schema = await apiService.getActiveFormSchema()
@@ -117,13 +117,13 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
         isLoading: false,
       }))
 
-       console.log('Форма инициализирована:', {
+      console.log('Форма инициализирована:', {
         schemaName: schema.name,
         startStep: schema.start_step_id,
         applicationUuid: session.application_uuid,
       })
     } catch (error) {
-       console.error('Ошибка инициализации формы:', error)
+      console.error('Ошибка инициализации формы:', error)
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -136,11 +136,11 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
   const goToNextStep = useCallback(
     async (fieldValues: Record<string, any>) => {
       if (!state.schema || !state.currentStep) {
-        console.error('❌ Схема или текущий шаг не определены')
+        console.error('Схема или текущий шаг не определены')
         return
       }
 
-      console.log('⏭️ Переход к следующему шагу с данными:', fieldValues)
+      console.log('Переход к следующему шагу с данными:', fieldValues)
 
       // Обновляем данные формы
       const newFormData = { ...state.formData, ...fieldValues }
@@ -149,14 +149,14 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
       const nextStepId = calculateNextStep(state.currentStep, newFormData)
 
       if (!nextStepId) {
-        console.log('🏁 Достигнут конец формы')
+        console.log('Достигнут конец формы')
         return
       }
 
       const nextStep = state.schema.steps.find((step) => step.step_id === nextStepId)
 
       if (!nextStep) {
-        console.error(`❌ Шаг "${nextStepId}" не найден в схеме`)
+        console.error(`Шаг "${nextStepId}" не найден в схеме`)
         return
       }
 
@@ -172,7 +172,7 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
         try {
           await apiService.saveApplicationProgress(state.applicationUuid, newFormData)
         } catch (error) {
-          console.error('⚠️ Ошибка сохранения прогресса:', error)
+          console.error('Ошибка сохранения прогресса:', error)
         }
       }
     },
@@ -186,7 +186,7 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
       const step = state.schema.steps.find((s) => s.step_id === stepId)
       if (!step) {
-        console.error(`❌ Шаг "${stepId}" не найден`)
+        console.error(`Шаг "${stepId}" не найден`)
         return
       }
 
@@ -213,9 +213,9 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
     try {
       await apiService.saveApplicationProgress(state.applicationUuid, state.formData)
-      console.log('💾 Прогресс сохранен')
+      console.log('Прогресс сохранен')
     } catch (error) {
-      console.error('❌ Ошибка сохранения прогресса:', error)
+      console.error('Ошибка сохранения прогресса:', error)
       throw error
     }
   }, [state.applicationUuid, state.formData])
@@ -226,9 +226,9 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
     try {
       await apiService.submitApplication(state.applicationUuid)
-      console.log('✅ Заявка отправлена')
+      console.log('Заявка отправлена')
     } catch (error) {
-      console.error('❌ Ошибка отправки заявки:', error)
+      console.error('Ошибка отправки заявки:', error)
       throw error
     }
   }, [state.applicationUuid])

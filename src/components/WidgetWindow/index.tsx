@@ -61,7 +61,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
 
   const handleFormSubmit = useCallback(
     async (data: Record<string, string>) => {
-      console.log('📋 Данные формы отправлены:', data)
+      console.log('Данные формы отправлены:', data)
 
       const submitData = async () => {
         // Определяем платформу и отправляем данные соответствующим образом
@@ -249,7 +249,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
 
       // Отправляем текстовое сообщение для обработки в сценарии
       const fileNames = chatFiles.map((f) => f.name).join(', ')
-      handleUserAnswer(`📎 Файлы: ${fileNames}`)
+      handleUserAnswer(`Файлы: ${fileNames}`)
     },
     [convertFilesToChatFiles, handleUserAnswer],
   )
@@ -340,7 +340,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
       <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
         <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
         <div className={styles.complete}>
-          <h3>Спасибо за заполнение анкеты! 🎉</h3>
+          <h3>Спасибо за заполнение анкеты!</h3>
           <p>Ваши ответы сохранены и переданы в фонд.</p>
           <button onClick={restart} className={styles.restartButton}>
             Начать заново
