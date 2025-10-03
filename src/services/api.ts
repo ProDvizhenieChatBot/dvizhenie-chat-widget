@@ -78,7 +78,11 @@ class ApiService {
     const response = await fetch(`${this.baseUrl}/api/v1/forms/schema/active`)
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch form schema: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to fetch form schema: ${JSON.stringify(errorData.detail)}`
+        : `Failed to fetch form schema: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -98,7 +102,11 @@ class ApiService {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to create web session: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to create web session: ${JSON.stringify(errorData.detail)}`
+        : `Failed to create web session: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -119,7 +127,11 @@ class ApiService {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to create telegram session: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to create telegram session: ${JSON.stringify(errorData.detail)}`
+        : `Failed to create telegram session: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -136,11 +148,36 @@ class ApiService {
     )
 
     if (!response.ok) {
-      throw new Error(`Failed to get telegram application status: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to get telegram application status: ${JSON.stringify(errorData.detail)}`
+        : `Failed to get telegram application status: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
     console.log('Статус заявки Telegram:', data)
+    return data
+  }
+
+  /**
+   * Получить статус заявки
+   */
+  async getApplicationStatus(applicationUuid: string): Promise<{ status: string }> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/applications/${applicationUuid}/public/status`,
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to fetch application status: ${JSON.stringify(errorData.detail)}`
+        : `Failed to fetch application status: ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    console.log('Статус заявки:', data)
     return data
   }
 
@@ -151,7 +188,11 @@ class ApiService {
     const response = await fetch(`${this.baseUrl}/api/v1/applications/${applicationUuid}/public`)
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch application data: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to fetch application data: ${JSON.stringify(errorData.detail)}`
+        : `Failed to fetch application data: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
