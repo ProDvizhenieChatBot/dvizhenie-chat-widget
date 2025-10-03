@@ -1,61 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+
 import { apiService } from '../services/api'
+import type { ApplicationData, FormField, FormStep, FormSchema } from '../types/form'
+import { isTelegramWebApp, getTelegramUserId } from '../utils/platform'
 
-// Временно определяем интерфейсы здесь
-export interface ApplicationData {
-  [key: string]: any
-}
-
-export interface FormField {
-  field_id: string
-  type:
-    | 'info'
-    | 'text'
-    | 'textarea'
-    | 'date'
-    | 'phone'
-    | 'email'
-    | 'single_choice_buttons'
-    | 'multiple_choice_checkbox'
-    | 'file'
-  label: string
-  required?: boolean
-  options?: string[]
-  condition?: {
-    field_id: string
-    operator: 'equals' | 'not_equals' | 'in' | 'not_in'
-    value: string | string[]
-  }
-  validation?: {
-    maxDate?: string
-    mask?: string
-  }
-  allow_multiple?: boolean
-  text?: string
-}
-
-export interface FormStep {
-  step_id: string
-  title: string
-  fields: FormField[]
-  navigation: {
-    type: 'direct' | 'conditional'
-    next_step_id?: string
-    source_field_id?: string
-    rules?: Array<{
-      value: string
-      next_step_id: string
-    }>
-    default_next_step_id?: string
-  }
-}
-
-export interface FormSchema {
-  name: string
-  version: string
-  start_step_id: string
-  steps: FormStep[]
-}
+// Реэкспортируем типы для удобства
+export type { ApplicationData, FormField, FormStep, FormSchema }
 
 export interface DynamicFormState {
   schema: FormSchema | null
@@ -97,15 +47,25 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
       // Получаем схему формы
       const schema = await apiService.getActiveFormSchema()
+      console.log('Полученная схема:', schema)
+      console.log('start_step_id:', schema.start_step_id)
+      console.log(
+        'Доступные шаги:',
+        schema.steps?.map((s) => s.step_id),
+      )
 
-      // Создаем сессию
-      const session = await apiService.createSession('web')
+      // Создаем сессию в зависимости от платформы
+      const session = isTelegramWebApp()
+        ? await apiService.createTelegramSession(getTelegramUserId() || 0)
+        : await apiService.createWebSession()
 
       // Находим начальный шаг
-      const startStep = schema.steps.find((step) => step.step_id === schema.start_step_id)
+      const startStep = schema.steps?.find((step) => step.step_id === schema.start_step_id)
 
       if (!startStep) {
-        throw new Error(`Начальный шаг "${schema.start_step_id}" не найден в схеме`)
+        throw new Error(
+          `Начальный шаг "${schema.start_step_id}" не найден в схеме. Доступные шаги: ${schema.steps?.map((s) => s.step_id).join(', ')}`,
+        )
       }
 
       setState((prev) => ({
@@ -283,6 +243,11 @@ function calculateNextStep(currentStep: FormStep, formData: ApplicationData): st
 
     // Возвращаем шаг по умолчанию
     return navigation.default_next_step_id || null
+  }
+
+  if (navigation.type === 'submit') {
+    // Для submit навигации возвращаем null - это означает конец формы
+    return null
   }
 
   return null

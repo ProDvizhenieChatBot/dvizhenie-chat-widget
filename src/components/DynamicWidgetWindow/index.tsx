@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { useDynamicForm, shouldShowField, FormField } from '../../hooks/useDynamicForm'
+
+import { useDynamicForm, shouldShowField } from '../../hooks/useDynamicForm'
 import type { ChatFile } from '../../types/chat'
 import {
   safeAsync,
@@ -8,11 +9,11 @@ import {
   defaultErrorHandler,
   type ErrorHandler,
 } from '../../utils/errorHandling'
+import Button from '../Button'
 import { type MessageButton } from '../Message'
 import MessagesList from '../MessagesList'
 import WidgetHeader from '../WidgetHeader'
-import DynamicField from '../DynamicField'
-import Button from '../Button'
+import WidgetInput from '../WidgetInput'
 import styles from '../WidgetWindow/styles.module.css'
 
 export interface DynamicWidgetWindowProps {
@@ -39,7 +40,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
 
   const [
     { schema, currentStep, currentStepId, formData, applicationUuid, isLoading, error: formError },
-    { initializeForm, goToNextStep, updateFormData, saveProgress, submitApplication, restartForm },
+    { initializeForm, goToNextStep, submitApplication, restartForm },
   ] = useDynamicForm()
 
   // Определяем обработчик ошибок в зависимости от платформы
@@ -61,89 +62,112 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     }
   }, [formError])
 
-  // Добавляем сообщение бота при изменении шага
+  // Добавляем сообщения бота при изменении шага
   useEffect(() => {
     if (currentStep && currentStepId) {
       console.log('Показываем шаг:', currentStepId, currentStep)
 
-      const botMessage: ChatMessage = {
-        id: `bot-${currentStepId}-${Date.now()}`,
-        text: currentStep.title,
+      const newMessages: ChatMessage[] = []
+
+      // Для terminate и summary шагов показываем text вместо title
+      const messageText =
+        currentStep.type === 'terminate' || currentStep.type === 'summary'
+          ? currentStep.text || currentStep.title
+          : currentStep.title
+
+      // Добавляем основное сообщение с заголовком
+      newMessages.push({
+        id: `bot-${currentStepId}-title-${Date.now()}`,
+        text: messageText,
         isBot: true,
+      })
+
+      // Показываем все видимые поля текущего шага
+      if (currentStep.fields) {
+        currentStep.fields.forEach((field, index) => {
+          if (shouldShowField(field, formData)) {
+            if (field.type === 'info') {
+              // Информационные поля как отдельные сообщения
+              newMessages.push({
+                id: `bot-${currentStepId}-info-${index}-${Date.now()}`,
+                text: field.text || field.label,
+                isBot: true,
+              })
+            } else if (field.type === 'single_choice_buttons' && field.options) {
+              // Поля с кнопками как сообщения с кнопками
+              newMessages.push({
+                id: `bot-${currentStepId}-buttons-${index}-${Date.now()}`,
+                text: field.label,
+                isBot: true,
+                buttons: field.options.map((option, optIndex) => ({
+                  id: `${field.field_id}-${optIndex}`,
+                  text: option,
+                  action: 'field_answer',
+                  value: option,
+                })),
+              })
+            }
+          }
+        })
       }
 
-      setMessages((prev) => [...prev, botMessage])
+      setMessages((prev) => [...prev, ...newMessages])
       setCurrentStepData({}) // Сбрасываем данные текущего шага
     }
-  }, [currentStep, currentStepId])
+  }, [currentStep, currentStepId, formData])
 
-  // Обработка изменения поля
-  const handleFieldChange = useCallback((fieldId: string, value: any) => {
-    console.log('Изменение поля:', fieldId, value)
-    setCurrentStepData((prev) => ({
-      ...prev,
-      [fieldId]: value,
-    }))
-  }, [])
+  // Обработка нажатия кнопки
+  const handleButtonClick = useCallback(
+    (button: MessageButton) => {
+      if (isProcessing) return
 
-  // Переход к следующему шагу
-  const handleNextStep = useCallback(async () => {
-    if (!currentStep || isProcessing) return
+      setIsProcessing(true)
 
-    setIsProcessing(true)
-
-    try {
-      console.log('Переход к следующему шагу с данными:', currentStepData)
-
-      // Проверяем обязательные поля
-      const visibleFields = currentStep.fields.filter((field) =>
-        shouldShowField(field, { ...formData, ...currentStepData }),
-      )
-
-      const requiredFields = visibleFields.filter((field) => field.required)
-      const missingFields = requiredFields.filter(
-        (field) => !currentStepData[field.field_id] || currentStepData[field.field_id] === '',
-      )
-
-      if (missingFields.length > 0) {
-        const fieldNames = missingFields.map((f) => f.label).join(', ')
-        setError(`Заполните обязательные поля: ${fieldNames}`)
-        setIsProcessing(false)
-        return
+      // Добавляем сообщение пользователя
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        text: button.text,
+        isBot: false,
       }
+      setMessages((prev) => [...prev, userMessage])
 
-      // Добавляем сообщение пользователя с ответами
-      const userAnswers = Object.entries(currentStepData)
-        .map(([fieldId, value]) => {
-          const field = currentStep.fields.find((f) => f.field_id === fieldId)
-          if (!field) return null
+      // Находим поле по ID кнопки
+      const fieldId = button.id.split('-')[0]
+      const fieldValue = button.value
 
-          if (Array.isArray(value)) {
-            return `${field.label}: ${value.join(', ')}`
+      // Обновляем данные формы
+      const newStepData = { ...currentStepData, [fieldId]: fieldValue }
+      setCurrentStepData(newStepData)
+
+      // Проверяем, все ли обязательные поля заполнены
+      const requiredFields =
+        currentStep?.fields?.filter(
+          (field) => field.required && shouldShowField(field, formData),
+        ) || []
+
+      const allRequiredFilled = requiredFields.every(
+        (field) => newStepData[field.field_id] || formData[field.field_id],
+      )
+
+      setTimeout(async () => {
+        try {
+          if (allRequiredFilled) {
+            // Все обязательные поля заполнены, переходим к следующему шагу
+            await goToNextStep(newStepData)
+            setIsProcessing(false)
+          } else {
+            // Еще не все поля заполнены, остаемся на текущем шаге
+            setIsProcessing(false)
           }
-          return `${field.label}: ${value}`
-        })
-        .filter(Boolean)
-        .join('\n')
-
-      if (userAnswers) {
-        const userMessage: ChatMessage = {
-          id: `user-${Date.now()}`,
-          text: userAnswers,
-          isBot: false,
+        } catch (error) {
+          console.error('Ошибка обработки поля:', error)
+          setError(error instanceof Error ? error.message : 'Ошибка обработки поля')
+          setIsProcessing(false)
         }
-        setMessages((prev) => [...prev, userMessage])
-      }
-
-      // Переходим к следующему шагу
-      await goToNextStep(currentStepData)
-    } catch (error) {
-      console.error('Ошибка перехода к следующему шагу:', error)
-      setError(error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу')
-    } finally {
-      setIsProcessing(false)
-    }
-  }, [currentStep, currentStepData, formData, goToNextStep, isProcessing])
+      }, 500)
+    },
+    [isProcessing, currentStep, formData, currentStepData, goToNextStep],
+  )
 
   // Обработка отправки формы
   const handleFormSubmit = useCallback(async () => {
@@ -196,42 +220,73 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     }
   }, [applicationUuid, submitApplication, formData, errorHandler])
 
-  // Получаем видимые поля для текущего шага
-  const visibleFields = useMemo(() => {
-    if (!currentStep) return []
-
-    return currentStep.fields.filter((field) =>
-      shouldShowField(field, { ...formData, ...currentStepData }),
+  // Определяем индекс последнего сообщения бота с кнопками
+  const lastBotMessageIndex = useMemo(() => {
+    return (
+      messages
+        .map((msg, idx) => (msg.isBot && msg.buttons ? idx : -1))
+        .filter((idx) => idx !== -1)
+        .pop() ?? -1
     )
-  }, [currentStep, formData, currentStepData])
+  }, [messages])
 
-  // Проверяем, можно ли перейти к следующему шагу
-  const canProceed = useMemo(() => {
-    const requiredFields = visibleFields.filter((field) => field.required)
-    return requiredFields.every(
-      (field) => currentStepData[field.field_id] && currentStepData[field.field_id] !== '',
+  // Обогащаем сообщения для передачи в MessagesList
+  const enrichedMessages = useMemo(() => {
+    return messages.map((message, index) => {
+      const isLastBotMessage = message.isBot && message.buttons && index === lastBotMessageIndex
+
+      return {
+        ...message,
+        // isProcessingButton только для последнего сообщения бота с кнопками
+        isProcessingButton: isLastBotMessage ? isProcessing : false,
+        // onButtonClick только для последнего сообщения бота с кнопками
+        onButtonClick: isLastBotMessage ? handleButtonClick : undefined,
+        // Для предыдущих сообщений кнопки должны быть заблокированы
+        buttonsDisabled: !isLastBotMessage,
+      }
+    })
+  }, [messages, isProcessing, lastBotMessageIndex, handleButtonClick])
+
+  // Обработка terminate шага
+  if (currentStep?.type === 'terminate') {
+    return (
+      <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
+        <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
+        <div className={styles.content}>
+          <MessagesList messages={messages} />
+          <div className={styles.stepFields}>
+            <div className={styles.navigationButtons}>
+              <Button onClick={restartForm} variant="filled">
+                Начать заново
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     )
-  }, [visibleFields, currentStepData])
+  }
 
-  // Определяем, является ли текущий шаг последним
-  const isLastStep = useMemo(() => {
-    if (!currentStep || !schema) return false
-
-    // Проверяем, есть ли следующий шаг в навигации
-    if (currentStep.navigation.type === 'direct') {
-      return !currentStep.navigation.next_step_id
-    }
-
-    if (currentStep.navigation.type === 'conditional') {
-      // Для условной навигации сложнее определить, но можно попробовать
-      return (
-        !currentStep.navigation.default_next_step_id &&
-        (!currentStep.navigation.rules || currentStep.navigation.rules.length === 0)
-      )
-    }
-
-    return false
-  }, [currentStep, schema])
+  // Обработка summary шага
+  if (currentStep?.type === 'summary') {
+    return (
+      <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
+        <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
+        <div className={styles.content}>
+          <MessagesList messages={messages} />
+          <div className={styles.stepFields}>
+            <div className={styles.navigationButtons}>
+              <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
+                {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
+              </Button>
+              <Button onClick={restartForm} variant="outlined">
+                Вернуться и исправить
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -274,47 +329,85 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
         </div>
       )}
 
-      <div className={styles.content}>
-        <MessagesList messages={messages} />
+      <MessagesList messages={enrichedMessages} />
 
-        {/* Поля текущего шага */}
-        <div className={styles.stepFields}>
-          {visibleFields.map((field) => (
-            <DynamicField
-              key={field.field_id}
-              field={field}
-              value={currentStepData[field.field_id]}
-              onChange={handleFieldChange}
-              onNext={field.type === 'single_choice_buttons' ? handleNextStep : undefined}
-              disabled={isProcessing}
-            />
-          ))}
+      {/* Показываем поле ввода для текстовых полей */}
+      {currentStep?.fields &&
+        (() => {
+          // Находим первое видимое текстовое поле, которое еще не заполнено
+          const textField = currentStep.fields.find(
+            (field) =>
+              ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
+              shouldShowField(field, formData) &&
+              !currentStepData[field.field_id],
+          )
 
-          {/* Кнопка продолжения для полей, которые не переходят автоматически */}
-          {visibleFields.length > 0 &&
-            !visibleFields.some((f) => f.type === 'single_choice_buttons') && (
-              <div className={styles.navigationButtons}>
-                {isLastStep ? (
-                  <Button
-                    onClick={handleFormSubmit}
-                    disabled={!canProceed || isProcessing}
-                    variant="primary"
-                  >
-                    {isProcessing ? 'Отправляем...' : 'Отправить заявку'}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleNextStep}
-                    disabled={!canProceed || isProcessing}
-                    variant="primary"
-                  >
-                    {isProcessing ? 'Обрабатываем...' : 'Продолжить'}
-                  </Button>
-                )}
-              </div>
-            )}
-        </div>
-      </div>
+          if (textField) {
+            const getPlaceholder = () => {
+              switch (textField.type) {
+                case 'email':
+                  return 'Введите email адрес'
+                case 'phone':
+                  return 'Введите номер телефона'
+                case 'date':
+                  return 'Введите дату (ДД.ММ.ГГГГ)'
+                default:
+                  return textField.label
+              }
+            }
+
+            const handleTextInput = (value: string) => {
+              // Добавляем сообщение пользователя
+              const userMessage: ChatMessage = {
+                id: `user-${Date.now()}`,
+                text: `${textField.label}: ${value}`,
+                isBot: false,
+              }
+              setMessages((prev) => [...prev, userMessage])
+
+              // Обновляем данные и переходим к следующему полю/шагу
+              const newStepData = { ...currentStepData, [textField.field_id]: value }
+              setCurrentStepData(newStepData)
+
+              // Проверяем, есть ли еще незаполненные поля
+              const remainingFields =
+                currentStep.fields?.filter(
+                  (field) =>
+                    ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
+                    shouldShowField(field, { ...formData, ...newStepData }) &&
+                    !newStepData[field.field_id],
+                ) || []
+
+              if (remainingFields.length === 0) {
+                // Все поля заполнены, переходим к следующему шагу
+                setTimeout(async () => {
+                  try {
+                    await goToNextStep(newStepData)
+                  } catch (error) {
+                    console.error('Ошибка перехода к следующему шагу:', error)
+                    setError(
+                      error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу',
+                    )
+                  }
+                }, 500)
+              }
+            }
+
+            return (
+              <WidgetInput
+                stepType={textField.type as any}
+                placeholder={getPlaceholder()}
+                onSend={handleTextInput}
+                isFullscreen={isFullscreen}
+                onFileUpload={() => {}}
+                onVoiceRecord={() => {}}
+                onCameraClick={() => {}}
+                onGalleryClick={() => {}}
+              />
+            )
+          }
+          return null
+        })()}
     </div>
   )
 }

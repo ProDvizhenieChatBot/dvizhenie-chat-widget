@@ -302,3 +302,11 @@ export const getPlatformConfig = (): PlatformConfig => {
     position: 'fixed',
   }
 }
+
+/**
+ * Получить Telegram ID пользователя
+ */
+export function getTelegramUserId(): number | null {
+  const tgWebApp = getTelegramWebApp()
+  return tgWebApp?.initDataUnsafe?.user?.id || null
+}

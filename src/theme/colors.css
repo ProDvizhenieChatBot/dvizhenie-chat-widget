@@ -10,6 +10,20 @@
   --color-error-bg: #fee;
   --color-error-light: #fef5f5;
 
+  /* Текстовые цвета */
+  --color-text-primary: #000;
+  --color-text-secondary: #4e4e4e;
+  --color-text-error: #c33;
+
+  /* Фоновые цвета */
+  --color-background-primary: #fff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-hover: rgba(64, 79, 219, 0.1);
+  --color-background-error: #fee;
+
+  /* Шрифт */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
   /* Размеры */
   --widget-padding: 8px;
   --widget-border-radius: 16px;

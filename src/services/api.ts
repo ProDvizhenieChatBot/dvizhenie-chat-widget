@@ -51,7 +51,7 @@ export interface FormStep {
 export interface FormSchema {
   name: string
   version: string
-  start_step_id: string
+  start_step_id: string // Стартовый шаг по step_id
   steps: FormStep[]
 }
 
@@ -87,23 +87,60 @@ class ApiService {
   }
 
   /**
-   * Создать новую сессию
+   * Создать новую сессию для веб-виджета
    */
-  async createSession(platform: 'web' | 'miniapp' = 'web'): Promise<SessionResponse> {
-    const response = await fetch(`${this.baseUrl}/api/v1/sessions`, {
+  async createWebSession(): Promise<SessionResponse> {
+    const response = await fetch(`${this.baseUrl}/api/v1/sessions/web`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ platform }),
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to create session: ${response.status}`)
+      throw new Error(`Failed to create web session: ${response.status}`)
     }
 
     const data = await response.json()
-    console.log('Создана сессия:', data)
+    console.log('Создана веб-сессия:', data)
+    return { application_uuid: data.application_uuid, session_id: data.application_uuid }
+  }
+
+  /**
+   * Создать или возобновить сессию для Telegram
+   */
+  async createTelegramSession(telegramId: number): Promise<SessionResponse> {
+    const response = await fetch(`${this.baseUrl}/api/v1/sessions/telegram`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ telegram_id: telegramId }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to create telegram session: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log('Создана/возобновлена Telegram сессия:', data)
+    return { application_uuid: data.application_uuid, session_id: data.application_uuid }
+  }
+
+  /**
+   * Получить статус заявки для Telegram пользователя
+   */
+  async getTelegramApplicationStatus(telegramId: number): Promise<{ status: string }> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/sessions/telegram/status?telegram_id=${telegramId}`,
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get telegram application status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log('Статус заявки Telegram:', data)
     return data
   }
 
@@ -131,11 +168,15 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ data }),
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to save application progress: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to save application progress: ${JSON.stringify(errorData.detail)}`
+        : `Failed to save application progress: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     console.log('Прогресс сохранен')
@@ -147,7 +188,8 @@ class ApiService {
   async linkFileToApplication(
     applicationUuid: string,
     fileId: string,
-    fieldId: string,
+    originalFilename: string,
+    formFieldId: string,
   ): Promise<void> {
     const response = await fetch(`${this.baseUrl}/api/v1/applications/${applicationUuid}/files`, {
       method: 'POST',
@@ -156,12 +198,17 @@ class ApiService {
       },
       body: JSON.stringify({
         file_id: fileId,
-        field_id: fieldId,
+        original_filename: originalFilename,
+        form_field_id: formFieldId,
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to link file to application: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to link file to application: ${JSON.stringify(errorData.detail)}`
+        : `Failed to link file to application: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     console.log('Файл привязан к заявке')
@@ -176,7 +223,11 @@ class ApiService {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to submit application: ${response.status}`)
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to submit application: ${JSON.stringify(errorData.detail)}`
+        : `Failed to submit application: ${response.status}`
+      throw new Error(errorMessage)
     }
 
     console.log('Заявка отправлена на проверку')

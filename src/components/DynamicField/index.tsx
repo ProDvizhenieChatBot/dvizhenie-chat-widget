@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { FormField } from '../../hooks/useDynamicForm'
+import type { FormField } from '../../types/form'
 import Button from '../Button'
 import WidgetInput from '../WidgetInput'
 import FileDropdown from '../FileDropdown'
@@ -78,7 +78,7 @@ const DynamicField: React.FC<DynamicFieldProps> = ({
               key={index}
               onClick={() => handleButtonClick(option)}
               disabled={disabled}
-              variant="outline"
+              variant="default"
             >
               {option}
             </Button>
@@ -116,7 +116,7 @@ const DynamicField: React.FC<DynamicFieldProps> = ({
           </label>
         ))}
         {selectedValues.length > 0 && (
-          <Button onClick={onNext} disabled={disabled}>
+          <Button onClick={onNext} disabled={disabled} variant="filled">
             Продолжить
           </Button>
         )}
