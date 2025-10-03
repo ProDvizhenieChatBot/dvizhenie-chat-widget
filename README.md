@@ -70,8 +70,8 @@ The widget is embedded **only via script inclusion**. It automatically detects t
   // Optional: custom configuration
   const widget = initDvizhenieWidget({
     containerId: 'my-widget-container', // Optional: specific container ID
-    className: 'my-custom-widget'       // Optional: custom CSS class
-  });
+    className: 'my-custom-widget', // Optional: custom CSS class
+  })
 </script>
 ```
 
@@ -391,17 +391,17 @@ The widget provides events for integration:
 ```javascript
 const widget = initDvizhenieWidget({
   onStepChange: (stepId, stepData) => {
-    console.log('Step changed:', stepId, stepData);
+    console.log('Step changed:', stepId, stepData)
   },
   onFormSubmit: (formData) => {
-    console.log('Form submitted:', formData);
+    console.log('Form submitted:', formData)
     // Handle form submission
   },
   onError: (error) => {
-    console.error('Widget error:', error);
+    console.error('Widget error:', error)
     // Handle errors
-  }
-});
+  },
+})
 ```
 
 #### Custom Validation
@@ -409,13 +409,13 @@ const widget = initDvizhenieWidget({
 You can extend validation rules:
 
 ```javascript
-import { validateEmail, validatePhone } from '@dvizhenie/chat-widget';
+import { validateEmail, validatePhone } from '@dvizhenie/chat-widget'
 
 // Custom validation function
 const customValidator = (value) => {
   // Your validation logic
-  return { isValid: true };
-};
+  return { isValid: true }
+}
 ```
 
 ### API Reference
@@ -439,9 +439,28 @@ export type { DvizhenieWidgetConfig } from './init'
 export { useScenario } from './hooks/useScenario'
 
 // Utilities
-export { isTelegramWebApp, getTelegramWebApp, isMobile, getViewportSize, getPlatformConfig } from './utils/platform'
-export { validateEmail, validatePhone, validateDate, validateUrl, validateText, validateFullName } from './utils/validation'
-export { safeAsync, safeSync, createRetryFunction, defaultErrorHandler, telegramErrorHandler } from './utils/errorHandling'
+export {
+  isTelegramWebApp,
+  getTelegramWebApp,
+  isMobile,
+  getViewportSize,
+  getPlatformConfig,
+} from './utils/platform'
+export {
+  validateEmail,
+  validatePhone,
+  validateDate,
+  validateUrl,
+  validateText,
+  validateFullName,
+} from './utils/validation'
+export {
+  safeAsync,
+  safeSync,
+  createRetryFunction,
+  defaultErrorHandler,
+  telegramErrorHandler,
+} from './utils/errorHandling'
 
 // Types
 export type { FormData, ChatStep, ChatState, ChatFile } from './types/chat'
@@ -465,20 +484,23 @@ The widget automatically adapts to the platform:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>My Website</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Welcome to our site</h1>
-    
+
     <!-- Widget will appear here -->
     <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"
+    ></script>
     <script src="https://your-cdn.com/dvizhenie-chat-widget-init.iife.js"></script>
     <script>
-        initDvizhenieWidget();
+      initDvizhenieWidget()
     </script>
-</body>
+  </body>
 </html>
 ```
 
@@ -488,24 +510,24 @@ The widget automatically adapts to the platform:
 <div id="custom-chat-widget"></div>
 
 <script>
-const widget = initDvizhenieWidget({
+  const widget = initDvizhenieWidget({
     containerId: 'custom-chat-widget',
-    className: 'my-custom-widget'
-});
+    className: 'my-custom-widget',
+  })
 
-// Listen for events
-widget.on('stepChange', (stepId) => {
-    console.log('User is on step:', stepId);
-});
+  // Listen for events
+  widget.on('stepChange', (stepId) => {
+    console.log('User is on step:', stepId)
+  })
 
-widget.on('formSubmit', (data) => {
+  widget.on('formSubmit', (data) => {
     // Send data to your backend
     fetch('/api/submit-form', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-});
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+  })
 </script>
 ```
 
@@ -548,21 +570,25 @@ npm run test:coverage
 ### Common Issues
 
 **Widget not appearing:**
+
 - Check if React and ReactDOM are loaded before the widget script
 - Verify the CDN URL is correct and accessible
 - Check browser console for errors
 
 **Styling issues:**
+
 - Ensure `chat-widget.css` is loaded
 - Check for CSS conflicts with your site's styles
 - Verify CSS variables are properly set
 
 **Telegram WebApp not working:**
+
 - Ensure Telegram WebApp API is loaded before the widget
 - Check if the widget is running in Telegram environment
 - Verify `mode=telegram` parameter in development
 
 **Form validation errors:**
+
 - Check if validation functions are properly imported
 - Verify input types match expected formats
 - Check console for validation error messages

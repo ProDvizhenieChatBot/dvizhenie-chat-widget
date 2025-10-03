@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-export default defineConfig(({ command }) => {
+export default defineConfig(() => {
   const isInitBuild = process.env.BUILD_INIT === 'true'
   const isDemoBuild = process.env.BUILD_DEMO === 'true'
 
