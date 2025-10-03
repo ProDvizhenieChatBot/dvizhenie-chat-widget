@@ -1,0 +1,190 @@
+.container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.voiceButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--widget-button-size);
+  height: var(--widget-button-size);
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-gray);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.voiceButton:hover {
+  background: rgba(199, 210, 233, 0.2);
+  color: var(--color-primary);
+}
+
+.voiceButton.recording {
+  background: var(--color-error);
+  color: var(--color-white);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.voiceButton.recording:hover {
+  background: var(--color-error);
+  transform: scale(1.05);
+}
+
+.voiceButton.processing {
+  background: rgba(199, 210, 233, 0.3);
+  color: var(--color-primary);
+  cursor: not-allowed;
+}
+
+.voiceButton.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+.voiceButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voiceButton.disabled:hover {
+  background: none;
+  color: var(--color-gray);
+  transform: none;
+}
+
+/* Анимация пульсации для записи */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Спиннер для состояния обработки */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-primary);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Индикатор записи */
+.recordingIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--widget-border-radius-small);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.recordingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-error);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.duration {
+  min-width: 32px;
+  font-family: var(--font-family);
+  font-weight: 500;
+}
+
+/* Тултип с ошибкой */
+.errorTooltip {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  z-index: 1000;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--widget-border-radius-small);
+  background: var(--color-error);
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  transform: translateX(-50%);
+  animation: fadeIn 0.2s ease-out;
+  white-space: nowrap;
+}
+
+.errorTooltip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 4px solid transparent;
+  transform: translateX(-50%);
+  content: '';
+  border-top-color: var(--color-error);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .voiceButton {
+    width: 44px;
+    height: 44px;
+  }
+
+  .recordingIndicator {
+    font-size: 12px;
+  }
+
+  .errorTooltip {
+    max-width: 200px;
+    font-size: 11px;
+    text-align: center;
+    white-space: normal;
+  }
+}

@@ -9,6 +9,7 @@ import './index.css'
 export interface DvizhenieWidgetConfig {
   containerId?: string
   className?: string
+  saluteSpeechToken?: string
 }
 
 export class DvizhenieWidget {
@@ -39,7 +40,7 @@ export class DvizhenieWidget {
 
     const isTelegram = isTelegramWebApp()
 
-    this.root.render(React.createElement(ChatWidget))
+    this.root.render(React.createElement(ChatWidget, { config: this.config }))
 
     if (isTelegram && window.Telegram?.WebApp) {
       window.Telegram.WebApp.BackButton.show()
@@ -69,7 +70,7 @@ export class DvizhenieWidget {
     this.config = { ...this.config, ...newConfig }
 
     if (this.root && this.container) {
-      this.root.render(React.createElement(ChatWidget))
+      this.root.render(React.createElement(ChatWidget, { config: this.config }))
     }
   }
 }

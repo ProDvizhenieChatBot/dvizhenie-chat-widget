@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 
 import { useScenario, type ScenarioStep } from '../../hooks/useScenario'
+import type { DvizhenieWidgetConfig } from '../../init'
 import type { ChatFile } from '../../types/chat'
 import {
   safeAsync,
@@ -19,6 +20,7 @@ import styles from './styles.module.css'
 export interface WidgetWindowProps {
   onClose: () => void
   isFullscreen?: boolean
+  config?: DvizhenieWidgetConfig
 }
 
 interface ChatMessage {
@@ -29,7 +31,11 @@ interface ChatMessage {
   files?: ChatFile[]
 }
 
-export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscreen = false }) => {
+export const WidgetWindow: React.FC<WidgetWindowProps> = ({
+  onClose,
+  isFullscreen = false,
+  config,
+}) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isProcessingButton, setIsProcessingButton] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -254,10 +260,6 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
     [convertFilesToChatFiles, handleUserAnswer],
   )
 
-  const onVoiceRecord = useCallback(() => {
-    console.log('Voice recording not implemented yet')
-  }, [])
-
   const onCameraClick = useCallback(() => {
     // Создаем input для камеры
     const cameraInput = document.createElement('input')
@@ -374,9 +376,9 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
           placeholder={getPlaceholderForStep(currentStep)}
           onSend={onSend}
           onFileUpload={onFileUpload}
-          onVoiceRecord={onVoiceRecord}
           onCameraClick={onCameraClick}
           onGalleryClick={onGalleryClick}
+          config={config}
         />
       )}
     </div>
