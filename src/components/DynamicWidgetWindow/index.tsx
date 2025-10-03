@@ -96,7 +96,8 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                 isBot: true,
               })
             } else if (
-              field.type === 'single_choice_buttons' &&
+              (field.type === 'single_choice_buttons' ||
+                field.type === 'multiple_choice_checkbox') &&
               field.options &&
               !firstButtonFieldShown &&
               !formData[field.field_id]
@@ -153,7 +154,8 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
           const combinedData = { ...formData, ...newStepData }
           const nextButtonField = currentStep?.fields?.find(
             (field) =>
-              field.type === 'single_choice_buttons' &&
+              (field.type === 'single_choice_buttons' ||
+                field.type === 'multiple_choice_checkbox') &&
               field.options &&
               !combinedData[field.field_id] &&
               shouldShowField(field, combinedData),
@@ -175,21 +177,84 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
             setMessages((prev) => [...prev, newBotMessage])
             setIsProcessing(false)
           } else {
-            // Нет больше полей с кнопками, проверяем обязательные поля
-            const requiredFields =
-              currentStep?.fields?.filter(
-                (field) => field.required && shouldShowField(field, combinedData),
-              ) || []
+            // Нет больше полей с кнопками, проверяем текстовые поля
+            const nextTextField = currentStep?.fields?.find(
+              (field) =>
+                ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
+                !combinedData[field.field_id] &&
+                shouldShowField(field, combinedData),
+            )
 
-            const allRequiredFilled = requiredFields.every((field) => combinedData[field.field_id])
-
-            if (allRequiredFilled) {
-              // Все обязательные поля заполнены, переходим к следующему шагу
-              await goToNextStep(newStepData)
+            if (nextTextField) {
+              // Есть незаполненные текстовые поля - добавляем сообщение бота с вопросом
+              const newBotMessage: ChatMessage = {
+                id: `bot-${currentStepId}-text-${nextTextField.field_id}-${Date.now()}`,
+                text: nextTextField.label,
+                isBot: true,
+              }
+              setMessages((prev) => [...prev, newBotMessage])
               setIsProcessing(false)
             } else {
-              // Еще не все поля заполнены, остаемся на текущем шаге
-              setIsProcessing(false)
+              // Проверяем, есть ли файловые поля
+              const fileFields =
+                currentStep?.fields?.filter(
+                  (field) =>
+                    field.type === 'file' &&
+                    !combinedData[field.field_id] &&
+                    shouldShowField(field, combinedData),
+                ) || []
+
+              if (fileFields.length > 0) {
+                // Есть файловые поля - временно пропускаем их
+                // TODO: Реализовать загрузку файлов
+                const fileFieldsData: Record<string, string> = {}
+                fileFields.forEach((field) => {
+                  fileFieldsData[field.field_id] = 'skipped' // Временная заглушка
+                })
+
+                const updatedStepData = { ...newStepData, ...fileFieldsData }
+
+                // Показываем сообщение о пропуске файлов
+                const newBotMessage: ChatMessage = {
+                  id: `bot-${currentStepId}-files-skip-${Date.now()}`,
+                  text: '⚠️ Загрузка файлов пока не реализована. Пропускаем этот шаг.',
+                  isBot: true,
+                }
+                setMessages((prev) => [...prev, newBotMessage])
+
+                // Переходим к следующему шагу
+                setTimeout(async () => {
+                  try {
+                    await goToNextStep(updatedStepData)
+                    setIsProcessing(false)
+                  } catch (error) {
+                    console.error('Ошибка перехода к следующему шагу:', error)
+                    setError(
+                      error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу',
+                    )
+                    setIsProcessing(false)
+                  }
+                }, 1000)
+              } else {
+                // Все поля заполнены, проверяем обязательные поля
+                const requiredFields =
+                  currentStep?.fields?.filter(
+                    (field) => field.required && shouldShowField(field, combinedData),
+                  ) || []
+
+                const allRequiredFilled = requiredFields.every(
+                  (field) => combinedData[field.field_id],
+                )
+
+                if (allRequiredFilled) {
+                  // Все обязательные поля заполнены, переходим к следующему шагу
+                  await goToNextStep(newStepData)
+                  setIsProcessing(false)
+                } else {
+                  // Еще не все поля заполнены, остаемся на текущем шаге
+                  setIsProcessing(false)
+                }
+              }
             }
           }
         } catch (error) {
@@ -367,12 +432,30 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
       {/* Показываем поле ввода для текстовых полей */}
       {currentStep?.fields &&
         (() => {
+          // Объединяем данные для проверки
+          const combinedData = { ...formData, ...currentStepData }
+
+          // Проверяем, есть ли незаполненные кнопочные поля
+          const hasUnfilledButtonFields = currentStep.fields.some(
+            (field) =>
+              (field.type === 'single_choice_buttons' ||
+                field.type === 'multiple_choice_checkbox') &&
+              field.options &&
+              !combinedData[field.field_id] &&
+              shouldShowField(field, combinedData),
+          )
+
+          // Если есть незаполненные кнопочные поля, не показываем текстовое поле
+          if (hasUnfilledButtonFields) {
+            return null
+          }
+
           // Находим первое видимое текстовое поле, которое еще не заполнено
           const textField = currentStep.fields.find(
             (field) =>
               ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
-              shouldShowField(field, formData) &&
-              !currentStepData[field.field_id],
+              shouldShowField(field, combinedData) &&
+              !combinedData[field.field_id],
           )
 
           if (textField) {
@@ -393,7 +476,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
               // Добавляем сообщение пользователя
               const userMessage: ChatMessage = {
                 id: `user-${Date.now()}`,
-                text: `${textField.label}: ${value}`,
+                text: value,
                 isBot: false,
               }
               setMessages((prev) => [...prev, userMessage])
@@ -402,28 +485,36 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
               const newStepData = { ...currentStepData, [textField.field_id]: value }
               setCurrentStepData(newStepData)
 
-              // Проверяем, есть ли еще незаполненные поля
-              const remainingFields =
-                currentStep.fields?.filter(
-                  (field) =>
-                    ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
-                    shouldShowField(field, { ...formData, ...newStepData }) &&
-                    !newStepData[field.field_id],
-                ) || []
+              // Проверяем, есть ли еще незаполненные текстовые поля
+              const combinedData = { ...formData, ...newStepData }
+              const nextTextField = currentStep.fields?.find(
+                (field) =>
+                  ['text', 'textarea', 'email', 'phone', 'date'].includes(field.type) &&
+                  shouldShowField(field, combinedData) &&
+                  !combinedData[field.field_id],
+              )
 
-              if (remainingFields.length === 0) {
-                // Все поля заполнены, переходим к следующему шагу
-                setTimeout(async () => {
-                  try {
+              setTimeout(async () => {
+                try {
+                  if (nextTextField) {
+                    // Есть следующее текстовое поле - показываем вопрос
+                    const newBotMessage: ChatMessage = {
+                      id: `bot-${currentStepId}-text-${nextTextField.field_id}-${Date.now()}`,
+                      text: nextTextField.label,
+                      isBot: true,
+                    }
+                    setMessages((prev) => [...prev, newBotMessage])
+                  } else {
+                    // Все текстовые поля заполнены, переходим к следующему шагу
                     await goToNextStep(newStepData)
-                  } catch (error) {
-                    console.error('Ошибка перехода к следующему шагу:', error)
-                    setError(
-                      error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу',
-                    )
                   }
-                }, 500)
-              }
+                } catch (error) {
+                  console.error('Ошибка перехода к следующему шагу:', error)
+                  setError(
+                    error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу',
+                  )
+                }
+              }, 500)
             }
 
             return (

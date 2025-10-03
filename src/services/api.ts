@@ -3,6 +3,7 @@
  */
 
 const API_BASE_URL = 'https://api.dvizhenie.ikemurami.com'
+const FILE_STORAGE_URL = 'http://localhost:8000' // TODO: Заменить на продакшн URL
 
 export interface FormField {
   field_id: string
