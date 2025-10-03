@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 
 import { getPlatformConfig, getTelegramWebApp, isTelegramWebApp } from '../../utils/platform'
-import WidgetButton from '../WidgetButton'
 import DynamicWidgetWindow from '../DynamicWidgetWindow'
+import WidgetButton from '../WidgetButton'
 
 import styles from './styles.module.css'
 

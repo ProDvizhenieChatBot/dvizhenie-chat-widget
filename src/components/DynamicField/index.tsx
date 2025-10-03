@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from 'react'
+import React, { useCallback } from 'react'
+
 import type { FormField } from '../../types/form'
 import Button from '../Button'
-import WidgetInput from '../WidgetInput'
 import FileDropdown from '../FileDropdown'
+import WidgetInput from '../WidgetInput'
+
 import styles from './styles.module.css'
 
 export interface DynamicFieldProps {
@@ -20,11 +22,8 @@ const DynamicField: React.FC<DynamicFieldProps> = ({
   onNext,
   disabled = false,
 }) => {
-  const [localValue, setLocalValue] = useState(value || '')
-
   const handleChange = useCallback(
     (newValue: any) => {
-      setLocalValue(newValue)
       onChange(field.field_id, newValue)
     },
     [field.field_id, onChange],
@@ -128,11 +127,7 @@ const DynamicField: React.FC<DynamicFieldProps> = ({
   if (field.type === 'file') {
     return (
       <div className={styles.fileField}>
-        <FileDropdown
-          onFileUpload={handleFileUpload}
-          multiple={field.allow_multiple}
-          disabled={disabled}
-        />
+        <FileDropdown isOpen={true} onClose={() => {}} onFileSelect={handleFileUpload} />
       </div>
     )
   }
@@ -172,7 +167,6 @@ const DynamicField: React.FC<DynamicFieldProps> = ({
           stepType={getStepType() as any}
           placeholder={getPlaceholder()}
           onSend={handleInputSend}
-          disabled={disabled}
           isFullscreen={false}
           // Отключаем дополнительные функции для простых полей
           onFileUpload={() => {}}
