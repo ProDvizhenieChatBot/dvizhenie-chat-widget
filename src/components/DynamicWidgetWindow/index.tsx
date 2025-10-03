@@ -569,13 +569,18 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                 }
                 setMessages((prev) => [...prev, loadingMessage])
 
-                // Загружаем и привязываем файл одним запросом
-                const uploadResult = await apiService.uploadAndLinkFile(
+                // Шаг 1: Загружаем файл в file-storage
+                const uploadResult = await apiService.uploadFile(file)
+                console.log('Файл загружен:', uploadResult)
+
+                // Шаг 2: Привязываем файл к заявке
+                await apiService.linkFileToApplication(
                   applicationUuid,
-                  file,
+                  uploadResult.file_id,
+                  uploadResult.filename,
                   fileField.field_id,
                 )
-                console.log('Файл загружен и привязан:', uploadResult)
+                console.log('Файл привязан к заявке')
 
                 // Показываем сообщение об успехе
                 const successMessage: ChatMessage = {
