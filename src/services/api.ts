@@ -86,7 +86,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Получена схема формы:', data)
     return data
   }
 
@@ -110,7 +109,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Создана веб-сессия:', data)
     return { application_uuid: data.application_uuid, session_id: data.application_uuid }
   }
 
@@ -135,7 +133,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Создана/возобновлена Telegram сессия:', data)
     return { application_uuid: data.application_uuid, session_id: data.application_uuid }
   }
 
@@ -156,7 +153,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Статус заявки Telegram:', data)
     return data
   }
 
@@ -177,7 +173,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Статус заявки:', data)
     return data
   }
 
@@ -196,7 +191,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Получены данные заявки:', data)
     return data
   }
 
@@ -219,25 +213,18 @@ class ApiService {
         : `Failed to save application progress: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Прогресс сохранен')
   }
 
   /**
-   * Загрузить файл и привязать к заявке (объединенный метод)
-   * Вместо двух отдельных запросов делаем один с multipart/form-data
+   * Загрузить файл в file-storage-service (Шаг 1)
    */
-  async uploadAndLinkFile(
-    applicationUuid: string,
+  async uploadFile(
     file: File,
-    formFieldId: string,
-  ): Promise<{ file_id: string }> {
+  ): Promise<{ file_id: string; filename: string; content_type: string }> {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('form_field_id', formFieldId)
-    formData.append('original_filename', file.name)
 
-    const response = await fetch(`${this.baseUrl}/api/v1/applications/${applicationUuid}/files`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/files/`, {
       method: 'POST',
       body: formData,
     })
@@ -251,8 +238,7 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Файл загружен и привязан:', data)
-    return { file_id: data }
+    return data
   }
 
   /**
@@ -308,8 +294,6 @@ class ApiService {
         : `Failed to link file to application: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Файл привязан к заявке')
   }
 
   /**
@@ -327,8 +311,6 @@ class ApiService {
         : `Failed to submit application: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Заявка отправлена на проверку')
   }
 }
 

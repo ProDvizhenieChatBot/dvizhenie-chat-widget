@@ -38,7 +38,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
   const [currentStepData, setCurrentStepData] = useState<Record<string, any>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
   const [
     { schema, currentStep, currentStepId, formData, applicationUuid, isLoading, error: formError },
@@ -67,8 +67,6 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
   // Добавляем сообщения бота при изменении шага
   useEffect(() => {
     if (currentStep && currentStepId) {
-      console.log('Показываем шаг:', currentStepId, currentStep)
-
       const newMessages: ChatMessage[] = []
 
       // Для terminate и summary шагов показываем text вместо title
@@ -248,33 +246,6 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     [isProcessing, currentStep, currentStepId, formData, currentStepData, goToNextStep],
   )
 
-  // Копирование ссылки для продолжения заполнения
-  const handleCopyResumeLink = useCallback(() => {
-    if (!applicationUuid) return
-
-    const resumeUrl = apiService.getApplicationResumeUrl(applicationUuid)
-
-    // Копируем в буфер обмена
-    navigator.clipboard
-      .writeText(resumeUrl)
-      .then(() => {
-        setShowSuccessMessage(true)
-        setTimeout(() => setShowSuccessMessage(false), 3000)
-
-        // Также показываем сообщение бота
-        const newBotMessage: ChatMessage = {
-          id: `bot-resume-link-${Date.now()}`,
-          text: `✅ Ссылка скопирована! Вы можете продолжить заполнение позже по этой ссылке:\n\n${resumeUrl}`,
-          isBot: true,
-        }
-        setMessages((prev) => [...prev, newBotMessage])
-      })
-      .catch((err) => {
-        console.error('Ошибка копирования:', err)
-        setError('Не удалось скопировать ссылку')
-      })
-  }, [applicationUuid])
-
   // Обработка отправки формы
   const handleFormSubmit = useCallback(async () => {
     if (!applicationUuid) return
@@ -284,32 +255,40 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     const submitData = async () => {
       await submitApplication()
 
-      // Определяем платформу и отправляем данные соответствующим образом
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const tgWebApp = window.Telegram.WebApp
+      // Скрываем кнопку
+      setIsSubmitted(true)
 
-        // В Telegram WebApp отправляем данные обратно в бота
-        if (tgWebApp.sendData) {
-          tgWebApp.sendData(
-            JSON.stringify({
-              type: 'form_submission',
-              application_uuid: applicationUuid,
-              data: formData,
-              timestamp: new Date().toISOString(),
-            }),
-          )
-
-          // Показываем уведомление пользователю
-          tgWebApp.showAlert('Спасибо! Ваша заявка отправлена.', () => {
-            tgWebApp.close()
-          })
-        } else {
-          throw new Error('Telegram WebApp sendData недоступен')
+      // Показываем сообщение об успехе в чате с отступом
+      setTimeout(() => {
+        const successMessage: ChatMessage = {
+          id: `bot-success-${Date.now()}`,
+          text: '✅ Спасибо! Ваша заявка успешно отправлена на проверку.',
+          isBot: true,
         }
-      } else {
-        // В обычном браузере показываем уведомление
-        alert('Заявка успешно отправлена! Проверьте консоль для деталей.')
-      }
+        setMessages((prev) => [...prev, successMessage])
+
+        // Определяем платформу и отправляем данные соответствующим образом
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const tgWebApp = window.Telegram.WebApp
+
+          // В Telegram WebApp отправляем данные обратно в бота
+          if (tgWebApp.sendData) {
+            tgWebApp.sendData(
+              JSON.stringify({
+                type: 'form_submission',
+                application_uuid: applicationUuid,
+                data: formData,
+                timestamp: new Date().toISOString(),
+              }),
+            )
+
+            // Закрываем WebApp через некоторое время
+            setTimeout(() => {
+              tgWebApp.close()
+            }, 2000)
+          }
+        }
+      }, 300)
     }
 
     const result = await safeAsync(submitData, (error) => {
@@ -374,29 +353,36 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
 
   // Обработка summary шага
   if (currentStep?.type === 'summary') {
+    // Добавляем кнопку отправки как сообщение с кнопкой
+    const messagesWithSubmit = !isSubmitted
+      ? [
+          ...messages,
+          {
+            id: 'submit-button',
+            text: 'Готовы отправить анкету?',
+            isBot: true,
+            buttons: [
+              {
+                id: 'submit-btn',
+                text: isProcessing ? 'Отправляем...' : 'Отправить анкету',
+                action: 'submit',
+                value: 'submit',
+              },
+            ],
+            onButtonClick: () => {
+              if (!isProcessing) {
+                handleFormSubmit()
+              }
+            },
+          },
+        ]
+      : messages
+
     return (
       <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
         <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
-        {showSuccessMessage && (
-          <div className={styles.errorBanner} style={{ background: '#4caf50' }}>
-            <span>✅ Ссылка скопирована в буфер обмена!</span>
-          </div>
-        )}
         <div className={styles.content}>
-          <MessagesList messages={messages} />
-          <div className={styles.stepFields}>
-            <div className={styles.navigationButtons}>
-              <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
-                {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
-              </Button>
-              <Button onClick={handleCopyResumeLink} variant="outlined">
-                📋 Скопировать ссылку для продолжения
-              </Button>
-              <Button onClick={restartForm} variant="outlined">
-                Вернуться и исправить
-              </Button>
-            </div>
-          </div>
+          <MessagesList messages={messagesWithSubmit} />
         </div>
       </div>
     )
@@ -569,13 +555,16 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                 }
                 setMessages((prev) => [...prev, loadingMessage])
 
-                // Загружаем и привязываем файл одним запросом
-                const uploadResult = await apiService.uploadAndLinkFile(
+                // Шаг 1: Загружаем файл в file-storage
+                const uploadResult = await apiService.uploadFile(file)
+
+                // Шаг 2: Привязываем файл к заявке
+                await apiService.linkFileToApplication(
                   applicationUuid,
-                  file,
+                  uploadResult.file_id,
+                  uploadResult.filename,
                   fileField.field_id,
                 )
-                console.log('Файл загружен и привязан:', uploadResult)
 
                 // Показываем сообщение об успехе
                 const successMessage: ChatMessage = {
@@ -612,8 +601,23 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                       }
                       setMessages((prev) => [...prev, newBotMessage])
                     } else {
-                      // Все файлы загружены, переходим к следующему шагу
-                      await goToNextStep(newStepData)
+                      // Все файлы загружены, проверяем обязательные поля перед переходом
+                      const requiredFields =
+                        currentStep?.fields?.filter(
+                          (field) => field.required && shouldShowField(field, combinedData),
+                        ) || []
+
+                      const allRequiredFilled = requiredFields.every(
+                        (field) => combinedData[field.field_id],
+                      )
+
+                      if (allRequiredFilled) {
+                        // Все обязательные поля заполнены, переходим к следующему шагу
+                        await goToNextStep(newStepData)
+                      } else {
+                        console.error('Не все обязательные поля заполнены')
+                        setError('Не все обязательные поля заполнены')
+                      }
                     }
                   } catch (error) {
                     console.error('Ошибка перехода:', error)
