@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 
 import { useDynamicForm, shouldShowField } from '../../hooks/useDynamicForm'
+import { apiService } from '../../services/api'
 import type { ChatFile } from '../../types/chat'
 import {
   safeAsync,
@@ -37,6 +38,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
   const [currentStepData, setCurrentStepData] = useState<Record<string, any>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   const [
     { schema, currentStep, currentStepId, formData, applicationUuid, isLoading, error: formError },
@@ -205,36 +207,15 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
                 ) || []
 
               if (fileFields.length > 0) {
-                // Есть файловые поля - временно пропускаем их
-                // TODO: Реализовать загрузку файлов
-                const fileFieldsData: Record<string, string> = {}
-                fileFields.forEach((field) => {
-                  fileFieldsData[field.field_id] = 'skipped' // Временная заглушка
-                })
-
-                const updatedStepData = { ...newStepData, ...fileFieldsData }
-
-                // Показываем сообщение о пропуске файлов
+                // Есть файловые поля - показываем сообщение с просьбой загрузить первый файл
+                const firstFileField = fileFields[0]
                 const newBotMessage: ChatMessage = {
-                  id: `bot-${currentStepId}-files-skip-${Date.now()}`,
-                  text: '⚠️ Загрузка файлов пока не реализована. Пропускаем этот шаг.',
+                  id: `bot-${currentStepId}-file-${firstFileField.field_id}-${Date.now()}`,
+                  text: firstFileField.label,
                   isBot: true,
                 }
                 setMessages((prev) => [...prev, newBotMessage])
-
-                // Переходим к следующему шагу
-                setTimeout(async () => {
-                  try {
-                    await goToNextStep(updatedStepData)
-                    setIsProcessing(false)
-                  } catch (error) {
-                    console.error('Ошибка перехода к следующему шагу:', error)
-                    setError(
-                      error instanceof Error ? error.message : 'Ошибка перехода к следующему шагу',
-                    )
-                    setIsProcessing(false)
-                  }
-                }, 1000)
+                setIsProcessing(false)
               } else {
                 // Все поля заполнены, проверяем обязательные поля
                 const requiredFields =
@@ -266,6 +247,33 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     },
     [isProcessing, currentStep, currentStepId, formData, currentStepData, goToNextStep],
   )
+
+  // Копирование ссылки для продолжения заполнения
+  const handleCopyResumeLink = useCallback(() => {
+    if (!applicationUuid) return
+
+    const resumeUrl = apiService.getApplicationResumeUrl(applicationUuid)
+
+    // Копируем в буфер обмена
+    navigator.clipboard
+      .writeText(resumeUrl)
+      .then(() => {
+        setShowSuccessMessage(true)
+        setTimeout(() => setShowSuccessMessage(false), 3000)
+
+        // Также показываем сообщение бота
+        const newBotMessage: ChatMessage = {
+          id: `bot-resume-link-${Date.now()}`,
+          text: `✅ Ссылка скопирована! Вы можете продолжить заполнение позже по этой ссылке:\n\n${resumeUrl}`,
+          isBot: true,
+        }
+        setMessages((prev) => [...prev, newBotMessage])
+      })
+      .catch((err) => {
+        console.error('Ошибка копирования:', err)
+        setError('Не удалось скопировать ссылку')
+      })
+  }, [applicationUuid])
 
   // Обработка отправки формы
   const handleFormSubmit = useCallback(async () => {
@@ -369,12 +377,20 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     return (
       <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
         <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
+        {showSuccessMessage && (
+          <div className={styles.errorBanner} style={{ background: '#4caf50' }}>
+            <span>✅ Ссылка скопирована в буфер обмена!</span>
+          </div>
+        )}
         <div className={styles.content}>
           <MessagesList messages={messages} />
           <div className={styles.stepFields}>
             <div className={styles.navigationButtons}>
               <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
                 {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
+              </Button>
+              <Button onClick={handleCopyResumeLink} variant="outlined">
+                📋 Скопировать ссылку для продолжения
               </Button>
               <Button onClick={restartForm} variant="outlined">
                 Вернуться и исправить
@@ -530,6 +546,117 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
               />
             )
           }
+
+          // Если нет текстовых полей, проверяем файловые поля
+          const fileField = currentStep.fields.find(
+            (field) =>
+              field.type === 'file' &&
+              shouldShowField(field, combinedData) &&
+              !combinedData[field.field_id],
+          )
+
+          if (fileField) {
+            const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+              const file = event.target.files?.[0]
+              if (!file || !applicationUuid) return
+
+              try {
+                // Показываем сообщение о загрузке
+                const loadingMessage: ChatMessage = {
+                  id: `user-loading-${Date.now()}`,
+                  text: `📎 Загружаю файл "${file.name}"...`,
+                  isBot: false,
+                }
+                setMessages((prev) => [...prev, loadingMessage])
+
+                // Шаг 1: Загружаем файл
+                const uploadResult = await apiService.uploadFile(file)
+                console.log('Файл загружен:', uploadResult)
+
+                // Шаг 2: Привязываем файл к заявке
+                await apiService.linkFileToApplication(
+                  applicationUuid,
+                  uploadResult.file_id,
+                  file.name,
+                  fileField.field_id,
+                )
+
+                // Показываем сообщение об успехе
+                const successMessage: ChatMessage = {
+                  id: `user-${Date.now()}`,
+                  text: `✅ Файл "${file.name}" успешно загружен`,
+                  isBot: false,
+                }
+                setMessages((prev) => [...prev.slice(0, -1), successMessage])
+
+                // Обновляем данные формы
+                const newStepData = {
+                  ...currentStepData,
+                  [fileField.field_id]: uploadResult.file_id,
+                }
+                setCurrentStepData(newStepData)
+
+                // Проверяем, есть ли еще файловые поля
+                const combinedData = { ...formData, ...newStepData }
+                const nextFileField = currentStep.fields?.find(
+                  (field) =>
+                    field.type === 'file' &&
+                    shouldShowField(field, combinedData) &&
+                    !combinedData[field.field_id],
+                )
+
+                setTimeout(async () => {
+                  try {
+                    if (nextFileField) {
+                      // Есть следующее файловое поле
+                      const newBotMessage: ChatMessage = {
+                        id: `bot-${currentStepId}-file-${nextFileField.field_id}-${Date.now()}`,
+                        text: nextFileField.label,
+                        isBot: true,
+                      }
+                      setMessages((prev) => [...prev, newBotMessage])
+                    } else {
+                      // Все файлы загружены, переходим к следующему шагу
+                      await goToNextStep(newStepData)
+                    }
+                  } catch (error) {
+                    console.error('Ошибка перехода:', error)
+                    setError(error instanceof Error ? error.message : 'Ошибка перехода')
+                  }
+                }, 500)
+              } catch (error) {
+                console.error('Ошибка загрузки файла:', error)
+                setError(error instanceof Error ? error.message : 'Ошибка загрузки файла')
+                // Удаляем сообщение о загрузке
+                setMessages((prev) => prev.slice(0, -1))
+              }
+            }
+
+            return (
+              <div style={{ padding: '16px', borderTop: '1px solid #e0e0e0' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    padding: '12px 16px',
+                    background: '#2196f3',
+                    color: 'white',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  📎 Выбрать файл
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                </label>
+              </div>
+            )
+          }
+
           return null
         })()}
     </div>

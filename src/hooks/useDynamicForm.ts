@@ -54,33 +54,96 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
         schema.steps?.map((s) => s.step_id),
       )
 
-      // Создаем сессию в зависимости от платформы
-      const session = isTelegramWebApp()
-        ? await apiService.createTelegramSession(getTelegramUserId() || 0)
-        : await apiService.createWebSession()
+      // Проверяем, есть ли в URL параметр application_uuid для продолжения заполнения
+      const urlParams = new URLSearchParams(window.location.search)
+      const existingApplicationUuid = urlParams.get('application_uuid')
 
-      // Находим начальный шаг
-      const startStep = schema.steps?.find((step) => step.step_id === schema.start_step_id)
+      let applicationUuid: string
+      let existingFormData: ApplicationData = {}
 
-      if (!startStep) {
+      if (existingApplicationUuid) {
+        // Продолжаем заполнение существующей заявки
+        console.log('Продолжаем заполнение заявки:', existingApplicationUuid)
+        applicationUuid = existingApplicationUuid
+
+        // Загружаем сохраненные данные
+        try {
+          const applicationData = await apiService.getApplicationData(existingApplicationUuid)
+          existingFormData = applicationData.data || {}
+          console.log('Загружены данные заявки:', existingFormData)
+        } catch (error) {
+          console.warn('Не удалось загрузить данные заявки:', error)
+        }
+      } else {
+        // Создаем новую сессию
+        const session = isTelegramWebApp()
+          ? await apiService.createTelegramSession(getTelegramUserId() || 0)
+          : await apiService.createWebSession()
+        applicationUuid = session.application_uuid
+      }
+
+      // Определяем текущий шаг на основе заполненных данных
+      let currentStepId = schema.start_step_id
+      let currentStep = schema.steps?.find((step) => step.step_id === currentStepId)
+
+      if (!currentStep) {
         throw new Error(
           `Начальный шаг "${schema.start_step_id}" не найден в схеме. Доступные шаги: ${schema.steps?.map((s) => s.step_id).join(', ')}`,
         )
       }
 
+      // Если продолжаем заполнение, находим первый незаполненный шаг
+      if (existingApplicationUuid && Object.keys(existingFormData).length > 0) {
+        console.log('Ищем первый незаполненный шаг...')
+        let tempStepId = schema.start_step_id
+
+        // Проходим по шагам, пока не найдем незаполненный
+        for (let i = 0; i < schema.steps.length && tempStepId; i++) {
+          const step = schema.steps.find((s) => s.step_id === tempStepId)
+          if (!step) break
+
+          // Проверяем, заполнены ли все обязательные поля этого шага
+          const requiredFields = step.fields?.filter((field) => field.required) || []
+          const allFilled = requiredFields.every((field) => {
+            const value = existingFormData[field.field_id]
+            return value !== undefined && value !== null && value !== ''
+          })
+
+          if (!allFilled) {
+            // Нашли первый незаполненный шаг
+            currentStepId = tempStepId
+            currentStep = step
+            console.log('Продолжаем с шага:', currentStepId)
+            break
+          }
+
+          // Переходим к следующему шагу
+          const nextStepId = calculateNextStep(step, existingFormData)
+          if (!nextStepId) {
+            // Достигли конца формы
+            currentStepId = tempStepId
+            currentStep = step
+            break
+          }
+          tempStepId = nextStepId
+        }
+      }
+
       setState((prev) => ({
         ...prev,
         schema,
-        currentStep: startStep,
-        currentStepId: schema.start_step_id,
-        applicationUuid: session.application_uuid,
+        currentStep,
+        currentStepId,
+        applicationUuid,
+        formData: existingFormData,
         isLoading: false,
       }))
 
       console.log('Форма инициализирована:', {
         schemaName: schema.name,
-        startStep: schema.start_step_id,
-        applicationUuid: session.application_uuid,
+        currentStep: currentStepId,
+        applicationUuid,
+        resuming: !!existingApplicationUuid,
       })
     } catch (error) {
       console.error('Ошибка инициализации формы:', error)

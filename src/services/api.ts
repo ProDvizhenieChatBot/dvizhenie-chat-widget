@@ -3,7 +3,6 @@
  */
 
 const API_BASE_URL = 'https://api.dvizhenie.ikemurami.com'
-const FILE_STORAGE_URL = 'http://localhost:8000' // TODO: Заменить на продакшн URL
 
 export interface FormField {
   field_id: string
@@ -225,7 +224,58 @@ class ApiService {
   }
 
   /**
-   * Привязать файл к заявке
+   * Загрузить файл в file-storage-service (Шаг 1)
+   */
+  async uploadFile(
+    file: File,
+  ): Promise<{ file_id: string; filename: string; content_type: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${this.baseUrl}/api/v1/files/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const errorMessage = errorData?.detail
+        ? `Failed to upload file: ${JSON.stringify(errorData.detail)}`
+        : `Failed to upload file: ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    console.log('Файл загружен:', data)
+    return data
+  }
+
+  /**
+   * Получить ссылку для продолжения заполнения анкеты
+   * Эта ссылка может быть отправлена пользователю, чтобы он мог вернуться к заполнению
+   */
+  getApplicationResumeUrl(applicationUuid: string): string {
+    // URL виджета с параметром application_uuid
+    const widgetBaseUrl = window.location.origin
+    return `${widgetBaseUrl}/?application_uuid=${applicationUuid}`
+  }
+
+  /**
+   * Получить URL для просмотра/скачивания файла
+   */
+  getFileUrl(fileId: string): string {
+    return `${this.baseUrl}/api/v1/files/${fileId}`
+  }
+
+  /**
+   * Получить URL для скачивания файла
+   */
+  getFileDownloadUrl(fileId: string): string {
+    return `${this.baseUrl}/api/v1/files/${fileId}/download`
+  }
+
+  /**
+   * Привязать файл к заявке (Шаг 2)
    */
   async linkFileToApplication(
     applicationUuid: string,
