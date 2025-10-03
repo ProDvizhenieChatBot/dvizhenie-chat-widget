@@ -16,10 +16,10 @@ body {
 
 body.telegram-fullscreen {
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 body.telegram-fullscreen #root {
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
