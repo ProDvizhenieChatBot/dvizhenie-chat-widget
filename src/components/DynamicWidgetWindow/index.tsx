@@ -38,6 +38,7 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
   const [currentStepData, setCurrentStepData] = useState<Record<string, any>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
   const [
     { schema, currentStep, currentStepId, formData, applicationUuid, isLoading, error: formError },
@@ -254,35 +255,40 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
     const submitData = async () => {
       await submitApplication()
 
-      // Показываем сообщение об успехе в чате
-      const successMessage: ChatMessage = {
-        id: `bot-success-${Date.now()}`,
-        text: '✅ Спасибо! Ваша заявка успешно отправлена на проверку.',
-        isBot: true,
-      }
-      setMessages((prev) => [...prev, successMessage])
+      // Скрываем кнопку
+      setIsSubmitted(true)
 
-      // Определяем платформу и отправляем данные соответствующим образом
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const tgWebApp = window.Telegram.WebApp
-
-        // В Telegram WebApp отправляем данные обратно в бота
-        if (tgWebApp.sendData) {
-          tgWebApp.sendData(
-            JSON.stringify({
-              type: 'form_submission',
-              application_uuid: applicationUuid,
-              data: formData,
-              timestamp: new Date().toISOString(),
-            }),
-          )
-
-          // Закрываем WebApp через некоторое время
-          setTimeout(() => {
-            tgWebApp.close()
-          }, 2000)
+      // Показываем сообщение об успехе в чате с отступом
+      setTimeout(() => {
+        const successMessage: ChatMessage = {
+          id: `bot-success-${Date.now()}`,
+          text: '✅ Спасибо! Ваша заявка успешно отправлена на проверку.',
+          isBot: true,
         }
-      }
+        setMessages((prev) => [...prev, successMessage])
+
+        // Определяем платформу и отправляем данные соответствующим образом
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const tgWebApp = window.Telegram.WebApp
+
+          // В Telegram WebApp отправляем данные обратно в бота
+          if (tgWebApp.sendData) {
+            tgWebApp.sendData(
+              JSON.stringify({
+                type: 'form_submission',
+                application_uuid: applicationUuid,
+                data: formData,
+                timestamp: new Date().toISOString(),
+              }),
+            )
+
+            // Закрываем WebApp через некоторое время
+            setTimeout(() => {
+              tgWebApp.close()
+            }, 2000)
+          }
+        }
+      }, 300)
     }
 
     const result = await safeAsync(submitData, (error) => {
@@ -352,13 +358,15 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
         <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
         <div className={styles.content}>
           <MessagesList messages={messages} />
-          <div className={styles.stepFields}>
-            <div className={styles.navigationButtons}>
-              <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
-                {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
-              </Button>
+          {!isSubmitted && (
+            <div className={styles.stepFields}>
+              <div className={styles.navigationButtons}>
+                <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
+                  {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     )
