@@ -86,7 +86,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Получена схема формы:', data)
     return data
   }
 
@@ -110,7 +109,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Создана веб-сессия:', data)
     return { application_uuid: data.application_uuid, session_id: data.application_uuid }
   }
 
@@ -135,7 +133,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Создана/возобновлена Telegram сессия:', data)
     return { application_uuid: data.application_uuid, session_id: data.application_uuid }
   }
 
@@ -156,7 +153,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Статус заявки Telegram:', data)
     return data
   }
 
@@ -177,7 +173,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Статус заявки:', data)
     return data
   }
 
@@ -196,7 +191,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Получены данные заявки:', data)
     return data
   }
 
@@ -219,8 +213,6 @@ class ApiService {
         : `Failed to save application progress: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Прогресс сохранен')
   }
 
   /**
@@ -246,7 +238,6 @@ class ApiService {
     }
 
     const data = await response.json()
-    console.log('Файл загружен:', data)
     return data
   }
 
@@ -303,8 +294,6 @@ class ApiService {
         : `Failed to link file to application: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Файл привязан к заявке')
   }
 
   /**
@@ -322,8 +311,6 @@ class ApiService {
         : `Failed to submit application: ${response.status}`
       throw new Error(errorMessage)
     }
-
-    console.log('Заявка отправлена на проверку')
   }
 }
 

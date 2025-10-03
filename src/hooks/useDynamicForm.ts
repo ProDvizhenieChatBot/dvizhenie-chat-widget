@@ -43,16 +43,8 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
     setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
     try {
-      console.log('Инициализация динамической формы...')
-
       // Получаем схему формы
       const schema = await apiService.getActiveFormSchema()
-      console.log('Полученная схема:', schema)
-      console.log('start_step_id:', schema.start_step_id)
-      console.log(
-        'Доступные шаги:',
-        schema.steps?.map((s) => s.step_id),
-      )
 
       // Проверяем, есть ли в URL параметр application_uuid для продолжения заполнения
       const urlParams = new URLSearchParams(window.location.search)
@@ -63,14 +55,12 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
       if (existingApplicationUuid) {
         // Продолжаем заполнение существующей заявки
-        console.log('Продолжаем заполнение заявки:', existingApplicationUuid)
         applicationUuid = existingApplicationUuid
 
         // Загружаем сохраненные данные
         try {
           const applicationData = await apiService.getApplicationData(existingApplicationUuid)
           existingFormData = applicationData.data || {}
-          console.log('Загружены данные заявки:', existingFormData)
         } catch (error) {
           console.warn('Не удалось загрузить данные заявки:', error)
         }
@@ -94,7 +84,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
       // Если продолжаем заполнение, находим первый незаполненный шаг
       if (existingApplicationUuid && Object.keys(existingFormData).length > 0) {
-        console.log('Ищем первый незаполненный шаг...')
         let tempStepId = schema.start_step_id
 
         // Проходим по шагам, пока не найдем незаполненный
@@ -113,7 +102,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
             // Нашли первый незаполненный шаг
             currentStepId = tempStepId
             currentStep = step
-            console.log('Продолжаем с шага:', currentStepId)
             break
           }
 
@@ -138,13 +126,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
         formData: existingFormData,
         isLoading: false,
       }))
-
-      console.log('Форма инициализирована:', {
-        schemaName: schema.name,
-        currentStep: currentStepId,
-        applicationUuid,
-        resuming: !!existingApplicationUuid,
-      })
     } catch (error) {
       console.error('Ошибка инициализации формы:', error)
       setState((prev) => ({
@@ -163,8 +144,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
         return
       }
 
-      console.log('Переход к следующему шагу с данными:', fieldValues)
-
       // Обновляем данные формы
       const newFormData = { ...state.formData, ...fieldValues }
 
@@ -172,7 +151,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
       const nextStepId = calculateNextStep(state.currentStep, newFormData)
 
       if (!nextStepId) {
-        console.log('Достигнут конец формы')
         return
       }
 
@@ -236,7 +214,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
     try {
       await apiService.saveApplicationProgress(state.applicationUuid, state.formData)
-      console.log('Прогресс сохранен')
     } catch (error) {
       console.error('Ошибка сохранения прогресса:', error)
       throw error
@@ -249,7 +226,6 @@ export function useDynamicForm(): [DynamicFormState, DynamicFormActions] {
 
     try {
       await apiService.submitApplication(state.applicationUuid)
-      console.log('Заявка отправлена')
     } catch (error) {
       console.error('Ошибка отправки заявки:', error)
       throw error

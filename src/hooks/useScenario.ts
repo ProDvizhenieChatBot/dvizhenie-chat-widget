@@ -117,9 +117,6 @@ export const useScenario = () => {
       const newAnswers = { ...answers, [currentStepId]: answer }
       setAnswers(newAnswers)
 
-      // Выводим в консоль
-      console.log(`${currentStepId}: ${answer}`)
-
       // Добавляем текущий шаг в историю
       setStepHistory((prev) => [...prev, currentStepId])
 

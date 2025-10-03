@@ -61,8 +61,6 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({ onClose, isFullscree
 
   const handleFormSubmit = useCallback(
     async (data: Record<string, string>) => {
-      console.log('Данные формы отправлены:', data)
-
       const submitData = async () => {
         // Определяем платформу и отправляем данные соответствующим образом
         if (typeof window !== 'undefined' && window.Telegram?.WebApp) {

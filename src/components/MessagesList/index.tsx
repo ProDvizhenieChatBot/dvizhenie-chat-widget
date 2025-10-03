@@ -20,10 +20,6 @@ const MessagesList: React.FC<MessagesListProps> = React.memo(({ messages }) => {
   }, [])
 
   useEffect(() => {
-    scrollToBottom('auto')
-  }, [scrollToBottom])
-
-  useEffect(() => {
     const c = containerRef.current
     if (!c) return
 
