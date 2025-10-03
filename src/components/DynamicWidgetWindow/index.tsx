@@ -353,20 +353,36 @@ export const DynamicWidgetWindow: React.FC<DynamicWidgetWindowProps> = ({
 
   // Обработка summary шага
   if (currentStep?.type === 'summary') {
+    // Добавляем кнопку отправки как сообщение с кнопкой
+    const messagesWithSubmit = !isSubmitted
+      ? [
+          ...messages,
+          {
+            id: 'submit-button',
+            text: 'Готовы отправить анкету?',
+            isBot: true,
+            buttons: [
+              {
+                id: 'submit-btn',
+                text: isProcessing ? 'Отправляем...' : 'Отправить анкету',
+                action: 'submit',
+                value: 'submit',
+              },
+            ],
+            onButtonClick: () => {
+              if (!isProcessing) {
+                handleFormSubmit()
+              }
+            },
+          },
+        ]
+      : messages
+
     return (
       <div className={`${styles.widgetWindow} ${isFullscreen ? styles.fullscreen : ''}`}>
         <WidgetHeader onClose={onClose} hideCloseButton={isFullscreen} />
         <div className={styles.content}>
-          <MessagesList messages={messages} />
-          {!isSubmitted && (
-            <div className={styles.stepFields}>
-              <div className={styles.navigationButtons}>
-                <Button onClick={handleFormSubmit} disabled={isProcessing} variant="filled">
-                  {isProcessing ? 'Отправляем...' : 'Отправить анкету'}
-                </Button>
-              </div>
-            </div>
-          )}
+          <MessagesList messages={messagesWithSubmit} />
         </div>
       </div>
     )

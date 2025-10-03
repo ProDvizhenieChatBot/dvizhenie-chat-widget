@@ -8,15 +8,26 @@ type MessagesListProps = {
   messages: MessageProps[]
 }
 
-const MessagesList: React.FC<MessagesListProps> = React.memo(({ messages }) => {
+const MessagesList: React.FC<MessagesListProps> = ({ messages }) => {
   const containerRef = useRef<HTMLUListElement | null>(null)
   const prevLengthRef = useRef<number>(messages.length)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const c = containerRef.current
     if (!c) return
-    c.scrollTo({ top: c.scrollHeight, behavior })
+
+    // Используем requestAnimationFrame для гарантии, что DOM обновлен
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        c.scrollTo({ top: c.scrollHeight, behavior })
+      })
+    })
   }, [])
+
+  // Скролл при монтировании и первом рендере
+  useEffect(() => {
+    scrollToBottom('auto')
+  }, [scrollToBottom])
 
   useEffect(() => {
     const prev = prevLengthRef.current
@@ -48,6 +59,6 @@ const MessagesList: React.FC<MessagesListProps> = React.memo(({ messages }) => {
       ))}
     </ul>
   )
-})
+}
 
 export default MessagesList
