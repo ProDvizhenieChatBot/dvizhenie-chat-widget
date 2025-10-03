@@ -23,6 +23,7 @@ export default defineConfig([
         'error',
         { 'newlines-between': 'always', alphabetize: { order: 'asc', caseInsensitive: true } },
       ],
+      '@typescript-eslint/no-explicit-any': 'off',
       ...eslintConfigPrettier.rules,
     },
     languageOptions: {

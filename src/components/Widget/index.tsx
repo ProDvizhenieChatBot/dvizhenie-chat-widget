@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { getPlatformConfig, getTelegramWebApp, isTelegramWebApp } from '../../utils/platform'
 import WidgetButton from '../WidgetButton'
-import WidgetWindow from '../WidgetWindow'
+import DynamicWidgetWindow from '../DynamicWidgetWindow'
 
 import styles from './styles.module.css'
 
@@ -63,7 +63,7 @@ const Widget: React.FC<ChatWidgetProps> = () => {
   if (platformConfig.isFullscreen) {
     return (
       <div className={styles.fullscreenWidget}>
-        <WidgetWindow onClose={handleClose} isFullscreen={true} />
+        <DynamicWidgetWindow onClose={handleClose} isFullscreen={true} />
       </div>
     )
   }
@@ -71,7 +71,7 @@ const Widget: React.FC<ChatWidgetProps> = () => {
   // На обычном сайте показываем виджет с кнопкой
   return (
     <div className={styles.widget}>
-      {isOpen && <WidgetWindow onClose={handleClose} />}
+      {isOpen && <DynamicWidgetWindow onClose={handleClose} />}
       <WidgetButton onClick={() => setIsOpen((v) => !v)} isOpen={isOpen} />
     </div>
   )

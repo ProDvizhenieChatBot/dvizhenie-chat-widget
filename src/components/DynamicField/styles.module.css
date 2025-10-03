@@ -1,0 +1,75 @@
+.infoField {
+  padding: 16px;
+  background: var(--color-background-secondary);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.infoField p {
+  margin: 0;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.buttonField {
+  margin-bottom: 16px;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkboxField {
+  margin-bottom: 16px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.checkboxLabel span {
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.checkboxLabel:hover {
+  background: var(--color-background-hover);
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 8px;
+}
+
+.fileField {
+  margin-bottom: 16px;
+}
+
+.inputField {
+  margin-bottom: 16px;
+}
+
+.unknownField {
+  padding: 16px;
+  background: var(--color-background-error);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.unknownField p {
+  margin: 0;
+  color: var(--color-text-error);
+  font-weight: 500;
+}
