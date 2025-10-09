@@ -5,7 +5,7 @@ export default defineConfig(() => {
   const isInitBuild = process.env.BUILD_INIT === 'true'
   const isDemoBuild = process.env.BUILD_DEMO === 'true'
 
-  // Для демо-сборки используем обычную конфигурацию приложения
+  // Для демо-сборки используем конфигурацию как в dev-режиме
   if (isDemoBuild) {
     return {
       plugins: [react()],
@@ -14,7 +14,14 @@ export default defineConfig(() => {
         outDir: 'dist',
         sourcemap: true,
         target: 'es2019',
-        minify: 'esbuild',
+        minify: false, // Отключаем минификацию для dev-подобной сборки
+        rollupOptions: {
+          input: 'index.html', // Используем index.html как точку входа
+        },
+      },
+      server: {
+        port: 3000,
+        open: true,
       },
     }
   }
